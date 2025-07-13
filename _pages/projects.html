@@ -1,36 +1,50 @@
 ---
 layout: archive
-title: "Publications"
-permalink: /publications/
+title: "Projects"
+permalink: /projects/
 author_profile: true
 ---
+<h2 style="text-align: center; margin-bottom: 30px;">Projects</h2>
 
-{% if site.author.googlescholar %}
-  <div class="wordwrap">You can also find my articles on <a href="{{site.author.googlescholar}}">my Google Scholar profile</a>.</div>
-{% endif %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; padding: 20px; background-color: #f0fdf4;">
 
-{% include base_path %}
+  <!-- Project 1 -->
+  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
+    <img src="/images/chestxray.png" alt="Chest X-ray Diagnostic Assistant" style="width: 100%; border-radius: 5px;">
+    <h3 style="margin-top: 15px;">Multimodal Chest X-ray Diagnostic Assistant</h3>
+    <p style="font-style: italic; color: #666;">Jan 2025 – May 2025 | B.Tech Thesis</p>
+    <p>
+      Developed a modular AI agent for chest X-ray interpretation using GPT-4o-mini, integrating segmentation, classification, grounding, VQA, and report generation, supported by a RAG-enabled vector database for retrieval-augmented reasoning.
+    </p>
+    <p>
+      Achieved transparent and safe diagnostic support with human-in-the-loop feedback and benchmarked performance on ChestAgentBench and CheXBench datasets.
+    </p>
+  </div>
 
-<!-- New style rendering if publication categories are defined -->
-{% if site.publication_category %}
-  {% for category in site.publication_category  %}
-    {% assign title_shown = false %}
-    {% for post in site.publications reversed %}
-      {% if post.category != category[0] %}
-        {% continue %}
-      {% endif %}
-      {% unless title_shown %}
-        <h2>{{ category[1].title }}</h2><hr />
-        {% assign title_shown = true %}
-      {% endunless %}
-      {% include archive-single.html %}
-    {% endfor %}
-  {% endfor %}
-{% else %}
-  {% for post in site.publications reversed %}
-    {% include archive-single.html %}
-  {% endfor %}
-{% endif %}
+  <!-- Project 2 -->
+  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
+    <img src="/images/defect-denoise.png" alt="Defect Aware Deblurring" style="width: 100%; border-radius: 5px;">
+    <h3 style="margin-top: 15px;">Defect-Aware Denoising and Deblurring Network</h3>
+    <p style="font-style: italic; color: #666;">Oct 2024 – Nov 2024 | EE5179-Deep Learning for Imaging (KLA Project)</p>
+    <p>
+      Built an enhanced U-Net with Spatial-Channel Attention and Non-Local Blocks for industrial defect image restoration.
+      Trained on MVTec AD using composite loss functions, achieving 30.55 dB PSNR and 0.8450 SSIM with strong defect preservation.
+    </p>
+  </div>
 
+  <!-- Project 3 -->
+  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
+    <img src="/images/zaxis-sr.png" alt="Z-axis Super Resolution" style="width: 100%; border-radius: 5px;">
+    <h3 style="margin-top: 15px;">Comparative Evaluation of Z-axis 3D Super-Resolution Techniques</h3>
+    <p style="font-style: italic; color: #666;">Aug 2024 – Sept 2024 | MiRL Lab, IIT Madras</p>
+    <p>
+      Comparative study of z-axis 3D MRI super-resolution using Soup-GAN (GAN), DisC-Diff (Diffusion), and CuNeRF (Implicit Fields). Evaluated on IXI T1-weighted dataset with DisC-Diff offering best fidelity despite minor hallucinations.
+    </p>
+    <p>
+      Analyzed trade-offs between image quality and inference speed, recommending hybrid frameworks combining generative and implicit methods for better clinical deployment.
+    </p>
+  </div>
+
+</div>
 
 

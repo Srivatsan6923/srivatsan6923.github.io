@@ -75,25 +75,13 @@ redirect_from:
 
 <h2 style="text-align: center; margin-bottom: 30px;">News</h2>
 
-<div style="display: flex; justify-content: center;">
-  <table style="font-size: 16px; line-height: 1.7; border-collapse: collapse;">
-    <tbody>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Oct 2024</td><td>Awarded the <span style="color:#d97706; font-weight: 600;">IndiaAI Fellowship</span> and grant, given to only 80 across India, to research <span style="color:#d97706; font-weight: 600;">Speech & NLP multi-modal with Continual Learning</span>!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Sep 2024</td><td>Achieved 12th rank out of 74,000 participants nationwide in the <span style="color:#d97706; font-weight: 600;">Amazon ML Challenge</span>!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Jun 2024</td><td>Joined <span style="color:#b91c1c; font-weight: 600;">Indian Institute of Science</span> as research intern!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">April 2024</td><td>One paper accepted in <span style="color:#b91c1c; font-weight: 600;">CVPR 2024 Workshop</span> on Pixel-level Video Understanding in the Wild Challenge!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Dec 2023</td><td>Joined <span style="color:#b91c1c; font-weight: 600;">Carnegie Mellon University</span> as research intern!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">July 2023</td><td>Joined <span style="color:#b91c1c; font-weight: 600;">National University of Singapore</span> as research intern!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Feb 2023</td><td>One paper accepted in <span style="color:#b91c1c; font-weight: 600;">EMNLP 2022 Workshop</span> on Natural Legal Language Processing!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Nov 2022</td><td>Top 30 teams in <span style="color:#b91c1c; font-weight: 600;">NeurIPS 2022 CityLearn Challenge</span> in Multi-agent RL!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Aug 2022</td><td>Joined <span style="color:#b91c1c; font-weight: 600;">Samsung PRISM</span> as research intern!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">July 2022</td><td>Winner of <span style="color:#b91c1c; font-weight: 600;">Smart India Hackathon</span> among 160k+ students!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">April 2022</td><td>Joined <span style="color:#b91c1c; font-weight: 600;">NIT-Trichy</span> as research intern!</td></tr>
-      <tr><td style="padding-right: 20px; font-weight: bold; color:#1e3a8a;">Jan 2022</td><td>Runner up of <span style="color:#b91c1c; font-weight: 600;">MTX - HackOlympics 2.0 Shaastra</span> hackathon in my first year as a solo participant!</td></tr>
-    </tbody>
-  </table>
+<div style="display: flex; flex-direction: column; align-items: center;">
+    <div style="font-size: 16px; line-height: 1.7; max-width: 750px;">
+        <p><span style="font-weight:bold; color:#1e3a8a;">July 2024</span> — Awarded the <span style="color:#d97706; font-weight: 600;">AP-S Undergraduate Summer Research Scholarship</span> and grant, given to only 34 across th world, to research <span style="color:#d97706; font-weight: 600;"> Flexible and ML-Driven Antenna Desig on PDMS for sub-6 GHz wearable applications</span>!</p>
+        <p><span style="font-weight:bold; color:#1e3a8a;">April 2024</span> — Awarded <span style="color:#d97706; font-weight: 600;">Dr. Ram and Thaila Ramanujam Foundation’s Research Scholarship</span>, to research <span style="color:#d97706; font-weight: 600;">multi-modal Alzheimer's disease diagnosis</span>!</p>
+        <p><span style="font-weight:bold; color:#1e3a8a;">March 2023</span> — Selected for <span style="color:#d97706; font-weight: 600;">Summer Research Fellowship Program (SRFP) </span> by the Indian Academy of Science (IASc), to do research <span style="color:#d97706; font-weight: 600;">at Indian Institute of Science</span>!</p>
+    </div>
 </div>
-
 
 <!-- Spacer -->
 <div style="margin-top: 40px;"></div>
