@@ -45,23 +45,23 @@ redirect_from:
 
 <h2 style="text-align:center; margin-top: 40px;">Education</h2>
 
-<div style="display: flex; justify-content: center; align-items: flex-start; gap: 60px; flex-wrap: nowrap; margin-top: 20px; overflow-x: auto;">
+<div style="display: flex; justify-content: center; align-items: flex-start; gap: 60px; flex-wrap: wrap; margin-top: 20px;">
 
-  <div style="text-align: center; width: 300px; flex-shrink: 0;">
+  <div style="text-align: center; width: 300px;">
     <img src="/images/UCSD.png" alt="UCSD Logo" style="height: 100px; margin-bottom: 15px;">
     <div style="font-size: 18px; font-weight: 600;">University of California, San Diego</div>
     <div style="font-size: 16px;">MS in ECE (Machine Learning and Data Science)</div>
     <div style="font-size: 15px; color: #555;">(Sep 2025 – March 2027)</div>
   </div>
 
-  <div style="text-align: center; width: 300px; flex-shrink: 0;">
+  <div style="text-align: center; width: 300px;">
     <img src="/images/NITT.png" alt="NIT Trichy Logo" style="height: 100px; margin-bottom: 15px;">
     <div style="font-size: 18px; font-weight: 600;">NIT Tiruchirappalli</div>
     <div style="font-size: 16px;">B.Tech in Electronics and Communication Engineering</div>
     <div style="font-size: 15px; color: #555;">(July 2021 – May 2025)</div>
   </div>
 
-  <div style="text-align: center; width: 300px; flex-shrink: 0;">
+  <div style="text-align: center; width: 300px;">
     <img src="/images/IIT_Madras.png" alt="IIT Madras Logo" style="height: 100px; margin-bottom: 15px;">
     <div style="font-size: 18px; font-weight: 600;">IIT Madras</div>
     <div style="font-size: 16px;">B.Tech - Final Year Exchange</div>
