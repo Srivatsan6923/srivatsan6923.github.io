@@ -57,7 +57,7 @@ redirect_from:
   <div style="text-align: center; width: 300px;">
     <img src="/images/NITT.png" alt="NIT Trichy Logo" style="height: 100px; margin-bottom: 15px;">
     <div style="font-size: 18px; font-weight: 600;">NIT Tiruchirappalli</div>
-    <div style="font-size: 16px;">B.Tech in Electronics and Communication Engineering</div>
+    <div style="font-size: 16px;">B.Tech (Honors) in Electronics and Communication Engineering</div>
     <div style="font-size: 15px; color: #555;">(July 2021 – May 2025)</div>
   </div>
 
