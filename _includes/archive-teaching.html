@@ -1,0 +1,12 @@
+<div style="margin-bottom: 20px;">
+  <p style="font-size: 17px; margin: 0;">
+    <strong>
+      <a href="{{ post.course_url }}" target="_blank" style="color: #000; text-decoration: none;">
+        {{ post.title }}
+      </a>
+    </strong> ({{ post.semester }}) under 
+    {% for prof in post.professors %}
+      Prof. <a href="{{ prof.url }}" target="_blank" style="color: #be4bdb; text-decoration: none;">{{ prof.name }}</a>{% if forloop.last == false %}, {% endif %}
+    {% endfor %}
+  </p>
+</div>
