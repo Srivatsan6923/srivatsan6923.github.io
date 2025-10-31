@@ -26,13 +26,13 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
 <section style="margin-top: 40px; line-height: 1.6;">
 
   <h3 style="text-align: center; margin: 50px 0 20px;">Abstract</h3>
-  <p>
+  <p style="text-align: justify;">
     Image restoration plays a vital role in domains like medical imaging, surveillance, and industrial inspection, where recovering clean images from noisy or blurred inputs is essential. We propose a novel U-Net-based restoration network enhanced with Spatial and Channel Attention (SCA) and non-local blocks to capture both local and global dependencies. This design effectively removes noise and blur while preserving subtle yet critical defect features. By dynamically emphasizing important regions through attention mechanisms, the network ensures accurate and detail-preserving restoration.
   </p>
 
 
   <h3 style="text-align: center; margin: 50px 0 20px;">Methodology</h3>
-  <p>
+  <p style="text-align: justify;">
     The proposed <strong>U-Net-based image restoration network</strong> integrates 
     <strong>Spatial and Channel Attention (SCA)</strong> and <strong>non-local blocks</strong> 
     to capture both local and global dependencies within images. The 
@@ -52,32 +52,30 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
     </figcaption>
   </figure>
 
+  <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;"> 
 
-  <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-    
   <figure style="width:45%; text-align:center;">
     <img src="/images/KLA_Project/SCA_Module.png" 
         alt="Spatial and Channel Attention Module" 
-        style="width:100%; border-radius:8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
+        style="width:100%; height:300px; object-fit:cover; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08);">
     <figcaption style="font-size:14px; margin-top:6px; color:#666;">
-    Spatial and Channel Attention Module
+      Spatial and Channel Attention Module
     </figcaption>
   </figure>
 
   <figure style="width:45%; text-align:center;">
     <img src="/images/KLA_Project/NLB_Module.png" 
         alt="Non-Local Block Module" 
-        style="width:100%; border-radius:8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
+        style="width:100%; height:300px; object-fit:cover; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08);">
     <figcaption style="font-size:14px; margin-top:6px; color:#666;">
-    Non-Local Block Module
+      Non-Local Block Module
     </figcaption>
   </figure>
 
-  </div>
-
+</div>
 </div>
 
-  <p>
+  <p style="text-align: justify;">
     Training was performed on the <strong>MVTec Anomaly Detection (AD)</strong> dataset, 
     where clean images were artificially degraded using noise and blur to form input–target pairs. 
     The model was implemented in <strong>PyTorch</strong> with approximately <strong>868K parameters</strong> 
@@ -122,7 +120,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
 
   </div>
 
-  <p>
+  <p style="text-align: justify;">
     Model performance was evaluated using <strong>Peak Signal-to-Noise Ratio (PSNR)</strong> 
     and <strong>Structural Similarity Index Measure (SSIM)</strong>.
   </p>
@@ -144,7 +142,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
   </figure>
   </div>
 
-  <p>
+  <p style="text-align: justify;">
     High PSNR and SSIM scores demonstrate that the model effectively restores image quality 
     while preserving critical defect regions. Object types such as 
     <em>capsule</em>, <em>pill</em>, and <em>screw</em> achieved the best restoration fidelity, 
@@ -154,13 +152,13 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
   <hr style="margin: 40px 0;">
 
   <h3 style="text-align: center; margin: 50px 0 20px;">Conclusion</h3>
-  <p>
+  <p style="text-align: justify;">
     The <strong>Attention-Enhanced U-Net</strong> achieves superior image restoration performance 
     by leveraging <strong>attention mechanisms</strong> and <strong>non-local context modeling</strong>. 
     It effectively removes noise and blur while maintaining structural integrity and fine defect details.
   </p>
 
-  <p>
+  <p style="text-align: justify;">
     This architecture presents a robust solution for 
     <strong>defect-preserving image restoration</strong> in industrial and medical imaging applications.
   </p>

@@ -5,7 +5,7 @@ permalink: /projects/2d-3d-recon/
 author_profile: false
 ---
 
-B.Tech Thesis
+MiRL Lab, IITM & Meril Life Sciences Project
 
 ---
 
