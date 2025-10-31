@@ -1,7 +1,7 @@
 ---
 layout: single
 title: "Comparative Analysis of 3D Super-Resolution Techniques: GANs, Diffusion Models, and CuNeRF"
-permalink: /projects/superres/
+permalink: /projects/zsuperres/
 author_profile: false
 ---
 

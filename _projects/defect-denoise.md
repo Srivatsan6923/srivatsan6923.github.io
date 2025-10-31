@@ -51,13 +51,12 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
       Architecture of the proposed network for image restoration
     </figcaption>
   </figure>
-
-  <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;"> 
+<div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;"> 
 
   <figure style="width:45%; text-align:center;">
     <img src="/images/KLA_Project/SCA_Module.png" 
         alt="Spatial and Channel Attention Module" 
-        style="width:100%; height:300px; object-fit:cover; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08);">
+        style="width:100%; height:300px; object-fit:contain; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08); background-color:#f9f9f9;">
     <figcaption style="font-size:14px; margin-top:6px; color:#666;">
       Spatial and Channel Attention Module
     </figcaption>
@@ -66,7 +65,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
   <figure style="width:45%; text-align:center;">
     <img src="/images/KLA_Project/NLB_Module.png" 
         alt="Non-Local Block Module" 
-        style="width:100%; height:300px; object-fit:cover; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08);">
+        style="width:100%; height:300px; object-fit:contain; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08); background-color:#f9f9f9;">
     <figcaption style="font-size:14px; margin-top:6px; color:#666;">
       Non-Local Block Module
     </figcaption>
