@@ -1,6 +1,6 @@
 ---
 layout: single
-title: "Robust and Efficient Critical View of Safety (CVS) Assessment from Surgical Video"
+title: "CVS Classification and hepatocystic anatomy segmentation in laparoscopic cholecystectomy surgical video"
 permalink: /projects/cvs_classification/
 author_profile: false
 ---
