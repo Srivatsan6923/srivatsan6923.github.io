@@ -4,107 +4,118 @@ title: "Projects"
 permalink: /projects/
 author_profile: true
 ---
-<h2 style="text-align: center; margin-bottom: 30px;">Projects</h2>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; padding: 20px; background-color: #f0fdf4;">
+<h2 class="section-heading section-heading--gradient">Projects</h2>
+<p class="section-sub">Research &amp; engineering work across medical imaging, agentic AI, and signal processing</p>
 
-  <!-- Project 1 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-  <a href="/projects/cxrgenie/" style="text-decoration: none; color: inherit;">
-    <img src="/images/CXRGenie/CXRGenie-front.png" alt="Chest X-ray Diagnostic Assistant" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">CXRGenie-Multimodal Chest X-ray Diagnostic Assistant</h3>
-    <p style="font-style: italic; color: #666;">B.Tech Thesis, MiRL Lab, IITM</p>
-    <p>
-      Developed a modular AI agent for chest X-ray interpretation using GPT-4o-mini, integrating segmentation, classification, grounding, VQA, and report generation, supported by a RAG-enabled vector database for retrieval-augmented reasoning.
-    </p>
-    <p>
-      Achieved transparent and safe diagnostic support with human-in-the-loop feedback and benchmarked performance on ChestAgentBench and CheXBench datasets.
-    </p>
+<div class="card-grid">
+
+  <!-- CXRGenie -->
+  <a class="card" href="/projects/cxrgenie/">
+    <div class="card__media"><img src="/images/CXRGenie/CXRGenie-front.png" alt="CXRGenie"></div>
+    <div class="card__body">
+      <span class="card__meta">B.Tech Thesis · MiRL Lab, IITM</span>
+      <h3 class="card__title">CXRGenie — Multimodal Chest X-ray Diagnostic Assistant</h3>
+      <p class="card__desc">A modular agentic AI for chest X-ray interpretation built on GPT-4o-mini, integrating segmentation, classification, grounding, VQA, and report generation with a RAG-backed vector DB for retrieval-augmented, human-in-the-loop reasoning.</p>
+      <div class="card__tags">
+        <span class="card__tag">Agentic AI</span><span class="card__tag">LLMs</span><span class="card__tag">RAG</span><span class="card__tag">Medical Imaging</span>
+      </div>
+    </div>
   </a>
+
+  <!-- 2D-3D recon -->
+  <a class="card" href="/projects/2d-3d-recon/">
+    <div class="card__media"><img src="/images/2D-3D_Recon/3D_recon_main.png" alt="2D-to-3D coronary reconstruction"></div>
+    <div class="card__body">
+      <span class="card__meta">Jun 2024 – May 2025 · MiRL, IITM &amp; Meril Life Sciences</span>
+      <h3 class="card__title">2D-to-3D Coronary Artery Reconstruction &amp; Stenosis Detection</h3>
+      <p class="card__desc">Algorithms for reconstructing 3D coronary geometry from X-ray angiograms, improving stenosis-detection accuracy and cutting computation time via pseudo-transient vFFR.</p>
+      <div class="card__tags">
+        <span class="card__tag">3D Vision</span><span class="card__tag">Medical Imaging</span><span class="card__tag">Reconstruction</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- CVS classification -->
+  <a class="card" href="/projects/cvs_classification/">
+    <div class="card__media"><img src="/images/CVS-Classification/CVS_segmentation.png" alt="CVS classification"></div>
+    <div class="card__body">
+      <span class="card__meta">Jun 2025 – Aug 2025 · MiRL Lab, IITM</span>
+      <h3 class="card__title">CVS Classification &amp; Hepatocystic Anatomy Segmentation</h3>
+      <p class="card__desc">Optimized deep models for laparoscopic cholecystectomy: video-based Critical View of Safety classification and anatomy segmentation to assist surgical workflows.</p>
+      <div class="card__tags">
+        <span class="card__tag">Surgical AI</span><span class="card__tag">Segmentation</span><span class="card__tag">Video</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Z superres -->
+  <a class="card" href="/projects/zsuperres/">
+    <div class="card__media"><img src="/images/Superres/Superres_front.png" alt="3D super-resolution"></div>
+    <div class="card__body">
+      <span class="card__meta">MiRL Lab, IITM</span>
+      <h3 class="card__title">3D Super-Resolution: GANs vs. Diffusion vs. CuNeRF</h3>
+      <p class="card__desc">Comparative study of z-axis 3D MRI super-resolution across GAN, diffusion, and implicit-field methods, analyzing the quality–latency trade-offs for clinical deployment.</p>
+      <div class="card__tags">
+        <span class="card__tag">Generative Models</span><span class="card__tag">Diffusion</span><span class="card__tag">MRI</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Alzheimer -->
+  <a class="card" href="/projects/multimodal_alzheimer/">
+    <div class="card__media"><img src="/images/Alzheimers/FusionDecompNet.png" alt="FusionDecompNet"></div>
+    <div class="card__body">
+      <span class="card__meta">MICAIH Lab, NIT Trichy · Ram-Thaila Scholarship</span>
+      <h3 class="card__title">FusionDecompNet — Multimodal Alzheimer's Diagnosis</h3>
+      <p class="card__desc">A multimodal multitask framework for Alzheimer's classification (NC/MCI/AD) via joint MRI–PET fusion with auxiliary modality reconstruction.</p>
+      <div class="card__tags">
+        <span class="card__tag">Multimodal</span><span class="card__tag">MRI/PET</span><span class="card__tag">Multitask</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Defect denoise (KLA) -->
+  <a class="card" href="/projects/defect-denoise/">
+    <div class="card__media"><img src="/images/KLA_Project/KLA_Project_front.png" alt="Defect-aware denoising"></div>
+    <div class="card__body">
+      <span class="card__meta">EE5179 Deep Learning for Imaging · IIT Madras</span>
+      <h3 class="card__title">Defect-Aware Denoising &amp; Deblurring Network</h3>
+      <p class="card__desc">An encoder–decoder with spatial-channel attention and non-local blocks for defect-preserving image restoration.</p>
+      <div class="card__tags">
+        <span class="card__tag">Image Restoration</span><span class="card__tag">Attention</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Additive manufacturing (no detail page yet) -->
+  <div class="card">
+    <div class="card__media" style="display:flex;align-items:center;justify-content:center;">
+      <img src="/images/A_STAR_logo.png" alt="A*STAR SimTech" style="object-fit:contain;padding:2.5rem;">
+    </div>
+    <div class="card__body">
+      <span class="card__meta">Jun 2024 – Sep 2024 · A*STAR SimTech, Singapore</span>
+      <h3 class="card__title">Metal Additive Manufacturing Defect Detection</h3>
+      <p class="card__desc">A spatial-attention segmentation model to detect spatter-particle defects in X-ray CT, improving defect detection for metal additive-manufacturing quality control.</p>
+      <div class="card__tags">
+        <span class="card__tag">Segmentation</span><span class="card__tag">X-ray CT</span><span class="card__tag">Attention</span>
+      </div>
+    </div>
   </div>
 
+  <!-- sEMG (no detail page yet) -->
+  <div class="card">
+    <div class="card__media" style="display:flex;align-items:center;justify-content:center;">
+      <img src="/images/Indian_Institute_of_Science_logo.png" alt="IISc Bengaluru" style="object-fit:contain;padding:2.5rem;">
+    </div>
+    <div class="card__body">
+      <span class="card__meta">May 2023 – Jul 2023 · Movement Control Lab, IISc</span>
+      <h3 class="card__title">sEMG Modeling &amp; MUAP Decomposition</h3>
+      <p class="card__desc">Collected and analyzed single-channel sEMG during hand-reaching tasks; applied signal processing and ICA to extract motor-unit recruitment patterns during muscle contraction.</p>
+      <div class="card__tags">
+        <span class="card__tag">Signal Processing</span><span class="card__tag">ICA</span><span class="card__tag">Biosignals</span>
+      </div>
+    </div>
+  </div>
 
-  <!-- Project 2 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-  <a href="/projects/defect-denoise/" style="text-decoration: none; color: inherit;">
-    <img src="/images/KLA_Project/KLA_Project_front.png" alt="Defect Deblurring Project" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">Defect-Aware Denoising and Deblurring Network</h3>
-    <p style="font-style: italic; color: #666;">EE5179-Deep Learning for Imaging (KLA Project), IIT Madras</p>
-    <p>
-      Built an enhanced encoder–decoder architecture with Spatial-Channel Attention and Non-Local Blocks for defect-preserving image restoration.
-    </p>
-  </a>
 </div>
-
-  <!-- Project 3 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-  <a href="/projects/zsuperres/" style="text-decoration: none; color: inherit;">
-    <img src="/images/Superres/Superres_front.png" alt="Z-axis Super Resolution" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">Comparative Analysis of Z-axis 3D Super-Resolution Techniques</h3>
-    <p style="font-style: italic; color: #666;">MiRL Lab, IIT Madras</p>
-    <p>    
-      Comparative study of z-axis 3D MRI super-resolution using GAN, Diffusion, and Implicit Fields. 
-    </p>
-    <p>
-      Analyzed trade-offs between image quality and inference speed for clinical deployment.
-    </p>
-   </a>
-  </div>
-
-
-  <!-- Project 4 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-  <a href="/projects/multimodal_alzheimer/" style="text-decoration: none; color: inherit;">
-    <img src="/images/Alzheimers/FusionDecompNet.png" alt="FusionDecompNet: A Multimodal Multitask Learning Framework for Alzheimer’s Diagnosis" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">FusionDecompNet: A Multimodal Multitask Learning Framework for Alzheimer’s Diagnosis</h3>
-    <p style="font-style: italic; color: #666;">MICAIH Lab, NIT Trichy (Ram Thaila Scholarship Project)</p>
-   </a>
-  </div>
-
-  <!-- Project 5 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-  <a href="/projects/2d-3d-recon/" style="text-decoration: none; color: inherit;">
-    <img src="/images/2D-3D_Recon/3D_recon_main.png" alt="2D-to-3D Coronary Artery Reconstruction" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">2D-to-3D Coronary Artery Reconstruction and stenosis detection</h3>
-    <p style="font-style: italic; color: #666;">Jun 2024 – May 2025 | MiRL Lab, IITM & Meril Life Sciences</p>
-    <p>
-     Developed algorithms for 2D-to-3D coronary artery reconstruction from X-ray angiography, enhancing stenosis detection accuracy and reducing computation time via pseudo-transient vFFR.
-    </p>
-  </a>
-  </div>
-
-  <!-- Project 6 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-  <a href="/projects/cvs_classification/" style="text-decoration: none; color: inherit;">
-    <img src="/images/CVS-Classification/CVS_segmentation.png" alt="CVS Classification and hepatocystic anatomy segmentation in laparoscopic" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">CVS Classification and hepatocystic anatomy segmentation in laparoscopic cholecystectomy</h3>
-    <p style="font-style: italic; color: #666;">Jun 2025 – Aug 2025 | MiRL Lab, IITM</p>
-    <p>
-      Developing optimized deep learning models for laparoscopic cholecystectomy: video-based CVS classification and hepatocystic anatomy segmentation to assist surgical workflows.
-    </p>
-  </a>
-  </div>
-
-  <!-- Project 7 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-    <img src="/images/chestxray.png" alt="Metal Additive Manufacturing Defect Detection" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">Metal Additive Manufacturing Defect Detection</h3>
-    <p style="font-style: italic; color: #666;">Jun 2024 – Sept 2024 | A*Star SimTech</p>
-    <p>
-      Developed a spatial attention-based segmentation model to detect spatter particle defects in X-ray Computed
-Tomography. Enhanced defect detection accuracy in metal additive manufacturing processes using the proposed model.
-    </p>
-  </div>
-
-  <!-- Project 8 -->
-  <div style="background-color: #e6f4ea; padding: 20px; border-radius: 10px;">
-    <img src="/images/chestxray.png" alt="sEMG Modeling and MUAPs Decomposition" style="width: 100%; border-radius: 5px;">
-    <h3 style="margin-top: 15px;">sEMG Modeling and MUAPs Decomposition</h3>
-    <p style="font-style: italic; color: #666;">May 2023 – July 2023 | Movement Control Lab, IISc</p>
-    <p>
-      Collected and analyzed sEMG data from human subjects during target-based hand-reaching tasks and appliedsignal processing techniques and ICA to extract muscle activation patterns from the single-channel sEMG signals. Modeled sEMG signals to study motor unit recruitment patterns during muscle contractions.
-    </p>
-  </div>
-
-</div>
-
