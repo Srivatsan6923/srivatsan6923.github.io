@@ -24,6 +24,7 @@ redirect_from:
     <div class="hero__socials">
       <a href="https://github.com/Srivatsan6923" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><i class="fab fa-github"></i></a>
       <a href="https://www.linkedin.com/in/srivatsan-sarvesan-b711a3223" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+      <a href="https://scholar.google.com/citations?user=kM3H-xcAAAAJ&hl=en" target="_blank" rel="noopener" aria-label="Google Scholar" title="Google Scholar"><i class="ai ai-google-scholar"></i></a>
       <a href="https://www.kaggle.com/srivatsansarvesan" target="_blank" rel="noopener" aria-label="Kaggle" title="Kaggle"><i class="fab fa-kaggle"></i></a>
       <a href="mailto:srivatsan6923@gmail.com" aria-label="Email" title="Email"><i class="fas fa-envelope"></i></a>
     </div>

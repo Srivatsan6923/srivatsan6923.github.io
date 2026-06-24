@@ -5,43 +5,41 @@ permalink: /publications/
 author_profile: true
 ---
 
-<h2 style="text-align:center; margin-bottom: 40px;">Publications</h2>
-<hr style="border: none; border-top: 2px solid #1e3a8a; margin-bottom: 40px; width: 80px; margin-left: auto; margin-right: auto;">
+<h2 class="section-heading section-heading--gradient">Publications</h2>
+<p class="section-sub">Peer-reviewed journal &amp; conference papers</p>
 
-<div style="background-color: #f8fafc; padding: 40px 0;">
-  <div style="display: flex; flex-direction: column; align-items: center;">
+{% if site.author.googlescholar %}
+<div style="text-align:center; margin-bottom: 1.5rem;">
+  <a class="btn-ghost" href="{{ site.author.googlescholar }}" target="_blank" rel="noopener">
+    <i class="ai ai-google-scholar"></i>&nbsp; View on Google Scholar
+  </a>
+</div>
+{% endif %}
 
-    <!-- Entry 1 -->
-    <div style="display: flex; align-items: flex-start; margin-bottom: 40px; max-width: 900px;">
-      <div style="flex: 1; padding-right: 20px;">
-        <img src="/images/antenna_paper_img.png" style="width: 100%; max-width: 350px;">
-      </div>
-      <div style="flex: 2; padding-left: 20px;">
-        <h3 style="margin-top: 0;">Low-Cost Fabrication and Comparative Evaluation of Machine Learning Algorithms for Flexible PDMS-Based Hexagonal Patch Antenna</h3>
-        <div style="font-weight: 500;"> <strong>Srivatsan Sarvesan</strong>, Mettu Goutham Reddy, S. S. Karthikeyan, Praveen K. Sekhar</div>
-        <div style="color: #16a34a; font-weight: 500;">Scientific Reports (2025)</div>
-        <div style="margin-top: 12px;">
-          <a href="https://www.nature.com/articles/s41598-025-15678-2" target="_blank" style="display: inline-block; background: #ecfeff; border: 1px solid #67e8f9; padding: 6px 14px; margin-right: 8px; color: #0f766e; font-weight: 600; text-decoration: none; border-radius: 5px;">Paper</a>
-          <a href="#" style="display: inline-block; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 14px; color: #be123c; font-weight: 600; text-decoration: none; border-radius: 5px;">Project Page</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Entry 2 -->
-    <div style="display: flex; align-items: flex-start; margin-bottom: 40px; max-width: 900px;">
-      <div style="flex: 1; padding-right: 20px;">
-        <img src="/images/DensePMSFNet_paper_img.png" style="width: 100%; max-width: 350px;">
-      </div>
-      <div style="flex: 2; padding-left: 20px;">
-        <h3 style="margin-top: 0;">Dense-PMSFNet: DenseNet Pyramidal Multi-Scale Fusion Network for Retinal Vasculature and FAZ Segmentation in OCTA Images</h3>
-        <div style="font-weight: 500;">Nisan Pranavah Raja, <strong>Srivatsan Sarvesan</strong>, Anju Thomas, Varun P. Gopi</div>
-        <div style="color: #22c55e; font-weight: 500;">IEEE Latin America Transactions (2025)</div>
-        <div style="margin-top: 12px;">
-          <a href="https://ieeexplore.ieee.org/document/10930374" target="_blank" style="display: inline-block; background: #ecfeff; border: 1px solid #67e8f9; padding: 6px 14px; margin-right: 8px; color: #0f766e; font-weight: 600; text-decoration: none; border-radius: 5px;">Paper</a>
-          <a href="#" style="display: inline-block; background: #f1f5f9; border: 1px solid #e2e8f0; padding: 6px 14px; color: #be123c; font-weight: 600; text-decoration: none; border-radius: 5px;">Project Page</a>
-        </div>
+<div class="pub-list">
+  {% assign pubs = site.publications | sort: 'date' | reverse %}
+  {% for post in pubs %}
+  <div class="pub reveal">
+    {% if post.image %}
+      <div class="pub__thumb"><img src="{{ post.image }}" alt="{{ post.title | escape }}"></div>
+    {% else %}
+      <div class="pub__thumb pub__thumb--ph">{{ post.venue }}</div>
+    {% endif %}
+    <div class="pub__body">
+      <h3 class="pub__title">
+        {% if post.paperurl %}<a href="{{ post.paperurl }}" target="_blank" rel="noopener">{{ post.title }}</a>
+        {% else %}{{ post.title }}{% endif %}
+      </h3>
+      {% if post.citation %}
+        <div class="pub__authors">{{ post.citation | split: '. &quot;' | first }}.</div>
+      {% endif %}
+      <div class="pub__venue">{{ post.venue }} · {{ post.date | date: "%Y" }}</div>
+      <div class="pub__links">
+        {% if post.paperurl %}<a href="{{ post.paperurl }}" target="_blank" rel="noopener">Paper</a>{% endif %}
+        {% if post.slidesurl %}<a href="{{ post.slidesurl }}" target="_blank" rel="noopener">Slides</a>{% endif %}
+        <a href="{{ post.url }}">Details</a>
       </div>
     </div>
-
   </div>
+  {% endfor %}
 </div>

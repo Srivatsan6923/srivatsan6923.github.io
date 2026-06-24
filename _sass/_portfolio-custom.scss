@@ -396,6 +396,45 @@ hr { border-top-color: var(--border); }
 .edu-card .edu-date { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; }
 
 /* --------------------------------------------------------------------------
+   PUBLICATIONS list
+   -------------------------------------------------------------------------- */
+.pub-list { max-width: 880px; margin: 1.5rem auto; display: flex; flex-direction: column; gap: 1.4rem; }
+.pub {
+  display: grid; grid-template-columns: 200px 1fr; gap: 1.4rem; align-items: stretch;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.pub:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+.pub__thumb { background: var(--bg-soft); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pub__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pub__thumb--ph {
+  background: var(--gradient); color: #fff;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
+  text-align: center; padding: 1.2rem; line-height: 1.4;
+}
+.pub__body { padding: 1.1rem 1.3rem 1.1rem 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.pub__title { font-size: 1.08rem; font-weight: 600; line-height: 1.35; margin: 0; }
+.pub__title a { color: var(--text); text-decoration: none; }
+.pub__title a:hover { color: var(--accent); }
+.pub__authors { font-size: 0.88rem; color: var(--text-soft); }
+.pub__authors .me { color: var(--accent); font-weight: 600; }
+.pub__venue { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+.pub__links { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: auto; padding-top: 0.5rem; }
+.pub__links a {
+  font-family: var(--font-display); font-size: 0.8rem; font-weight: 600;
+  padding: 0.3rem 0.85rem; border-radius: 999px; text-decoration: none;
+  background: var(--bg-soft); color: var(--accent); border: 1px solid var(--border);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.pub__links a:hover { background: var(--accent); color: var(--accent-text); }
+@media (max-width: 600px) {
+  .pub { grid-template-columns: 1fr; }
+  .pub__thumb { aspect-ratio: 16/9; }
+  .pub__body { padding: 0 1.2rem 1.2rem; }
+}
+
+/* --------------------------------------------------------------------------
    Reveal-on-scroll utility
    -------------------------------------------------------------------------- */
 .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
