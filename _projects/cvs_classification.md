@@ -1,7 +1,6 @@
 ---
 layout: single
 title: "CVS Classification and hepatocystic anatomy segmentation in laparoscopic cholecystectomy surgical video"
-permalink: /projects/cvs_classification/
 author_profile: false
 ---
 
@@ -9,16 +8,16 @@ MiRL Lab, IITM
 
 ---
 
-<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: #007acc;">
+<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: var(--accent);">
   ⬅ Projects
 </a>
 <div style="clear: both;"></div>
 
 <p style="text-align:center; margin-top:25px;">
-  🔗 <span style="font-weight:bold; color:#007acc;">GitHub: Private Repository</span>
+  🔗 <span style="font-weight:bold; color:var(--accent);">GitHub: Private Repository</span>
   &nbsp;|&nbsp;
   <!-- <a href="https://drive.google.com/file/d/1aaWVmgHe0nmKkfrDaH6_7NKyxt3tsBcS/view?usp=sharing" target="_blank" 
-  style="font-weight:bold; color:#007acc; text-decoration:none;">Project Report</a> -->
+  style="font-weight:bold; color:var(--accent); text-decoration:none;">Project Report</a> -->
 </p>
 
 
@@ -34,7 +33,7 @@ MiRL Lab, IITM
   In addition to classification, the project emphasizes trustworthy and interpretable surgical AI through scene-level understanding. Hepatocystic anatomy and surgical tool segmentation models were built by adapting SAMv2 with LoRA, enabling real-time segmentation of key anatomical structures and instruments relevant to CVS assessment. Segmentation performance was evaluated using COCO mAP@0.5 to prioritize accurate scene understanding while accounting for inherent boundary ambiguities in surgical anatomy. By combining CVS classification with anatomy and tool segmentation, this work demonstrates how self-supervised learning, efficient model adaptation, and multi-output vision systems can support clinically meaningful and deployable AI solutions for surgical safety.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;"></h3>
 <p>
     Qualitative results of hepatocystic anatomy and surgical tool segmentation during laparoscopic cholecystectomy. Raw endoscopic frames (left) are shown alongside model predictions (right), highlighting segmentation of key anatomical structures and instruments relevant to Critical View of Safety (CVS) assessment. 

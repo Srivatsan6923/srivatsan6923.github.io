@@ -1,7 +1,6 @@
 ---
 layout: single
 title: "Defect-Aware Image Denoising and Deblurring Network"
-permalink: /projects/defect-denoise/
 author_profile: false
 ---
 
@@ -9,17 +8,17 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
 
 ---
 
-<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: #007acc;">
+<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: var(--accent);">
   ⬅ Projects
 </a>
 <div style="clear: both;"></div>
 
  <p style="text-align:center; margin-top:25px;">
   🔗 <a href="https://github.com/Srivatsan6923/EE5179-Deep-Learning-for-Imaging_KLA_Project" target="_blank" 
-  style="font-weight:bold; color:#007acc; text-decoration:none;">GitHub Repo</a> 
+  style="font-weight:bold; color:var(--accent); text-decoration:none;">GitHub Repo</a> 
   &nbsp;|&nbsp; 
   <a href="https://drive.google.com/file/d/1X8d_Z5j78lN19-kCOrXgBtV7GUX3xsfN/view?usp=sharing" target="_blank" 
-  style="font-weight:bold; color:#007acc; text-decoration:none;">Project Report</a>
+  style="font-weight:bold; color:var(--accent); text-decoration:none;">Project Report</a>
 </p>
 
 
@@ -47,7 +46,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
     <img src="/images/KLA_Project/Proposed_Model.png" 
          alt="Architecture of the proposed network for image restoration" 
          style="width:85%; border-radius:12px; margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-    <figcaption style="font-size:14px; margin-top:6px; color:#666;">
+    <figcaption style="font-size:14px; margin-top:6px; color:var(--text-muted);">
       Architecture of the proposed network for image restoration
     </figcaption>
   </figure>
@@ -56,8 +55,8 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
   <figure style="width:45%; text-align:center;">
     <img src="/images/KLA_Project/SCA_Module.png" 
         alt="Spatial and Channel Attention Module" 
-        style="width:100%; height:300px; object-fit:contain; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08); background-color:#f9f9f9;">
-    <figcaption style="font-size:14px; margin-top:6px; color:#666;">
+        style="width:100%; height:300px; object-fit:contain; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08); background-color:var(--bg-soft);">
+    <figcaption style="font-size:14px; margin-top:6px; color:var(--text-muted);">
       Spatial and Channel Attention Module
     </figcaption>
   </figure>
@@ -65,8 +64,8 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
   <figure style="width:45%; text-align:center;">
     <img src="/images/KLA_Project/NLB_Module.png" 
         alt="Non-Local Block Module" 
-        style="width:100%; height:300px; object-fit:contain; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08); background-color:#f9f9f9;">
-    <figcaption style="font-size:14px; margin-top:6px; color:#666;">
+        style="width:100%; height:300px; object-fit:contain; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.08); background-color:var(--bg-soft);">
+    <figcaption style="font-size:14px; margin-top:6px; color:var(--text-muted);">
       Non-Local Block Module
     </figcaption>
   </figure>
@@ -89,7 +88,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
     <li><strong>Edge Loss</strong> – preserves fine edge structures</li>
   </ul>
 
-  <p style="text-align:center; font-size:15px; background:#f8f9fa; padding:10px 20px; border-radius:8px; border:1px solid #eee; display:inline-block;">
+  <p style="text-align:center; font-size:15px; background:var(--bg-soft); padding:10px 20px; border-radius:8px; border:1px solid var(--border); display:inline-block;">
   <strong>L = L<sub>char</sub> + 0.1·L<sub>edge</sub> + 0.3·L<sub>ssim</sub></strong>
   </p>
   
@@ -103,7 +102,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
     <img src="/images/KLA_Project/AvgPSNR.png" 
         alt="Average PSNR Values for Each Category" 
         style="width:100%; border-radius:8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-    <figcaption style="font-size:14px; margin-top:6px; color:#666;">
+    <figcaption style="font-size:14px; margin-top:6px; color:var(--text-muted);">
     Average PSNR Values for Each Category
     </figcaption>
   </figure>
@@ -112,7 +111,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
     <img src="/images/KLA_Project/AvgSSIM.png" 
         alt="Average SSIM Values for Each Category" 
         style="width:100%; border-radius:8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-    <figcaption style="font-size:14px; margin-top:6px; color:#666;">
+    <figcaption style="font-size:14px; margin-top:6px; color:var(--text-muted);">
     Average SSIM Values for Each Category
     </figcaption>
   </figure>
@@ -135,7 +134,7 @@ EE5179 - Deep Learning for Imaging (KLA Project), IIT Madras
     <img src="/images/KLA_Project/KLA_Project_Observation.png" 
          alt="Architecture of the proposed network for image restoration" 
          style="width:85%; border-radius:12px; margin-bottom:10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-    <figcaption style="font-size:14px; margin-top:6px; color:#666;">
+    <figcaption style="font-size:14px; margin-top:6px; color:var(--text-muted);">
       Sample Results
     </figcaption>
   </figure>

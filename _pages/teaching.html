@@ -5,8 +5,10 @@ permalink: /teaching/
 author_profile: true
 ---
 
-{% include base_path %}
+<h2 class="section-heading section-heading--gradient">Teaching</h2>
 
-{% for post in site.teaching reversed %}
-  {% include archive-teaching.html %}
-{% endfor %}
+<div class="timeline">
+  {% for post in site.teaching reversed %}
+    {% include archive-teaching.html %}
+  {% endfor %}
+</div>

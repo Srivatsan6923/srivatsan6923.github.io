@@ -1,0 +1,14 @@
+# Local preview: docker compose up  ->  http://localhost:4000 (live reload)
+services:
+  site:
+    image: ruby:3.2
+    working_dir: /srv
+    ports: ["4000:4000", "35729:35729"]
+    volumes:
+      - .:/srv
+      - bundle:/usr/local/bundle
+    command: >
+      bash -lc "bundle install &&
+      bundle exec jekyll serve -H 0.0.0.0 --livereload --force_polling --incremental"
+volumes:
+  bundle:

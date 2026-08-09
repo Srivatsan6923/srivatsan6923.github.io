@@ -1,7 +1,6 @@
 ---
 layout: single
 title: "Comparative Analysis of 3D Super-Resolution Techniques: GANs, Diffusion Models, and CuNeRF"
-permalink: /projects/zsuperres/
 author_profile: false
 ---
 
@@ -9,32 +8,32 @@ MiRL Lab, IIT Madras
 
 ---
 
-<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: #007acc;">
+<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: var(--accent);">
   ⬅ Projects
 </a>
 <div style="clear: both;"></div>
 
 <p style="text-align:center; margin-top:25px;">
-  🔗 <span style="font-weight:bold; color:#007acc;">GitHub: Private Repository</span>
+  🔗 <span style="font-weight:bold; color:var(--accent);">GitHub: Private Repository</span>
   &nbsp;|&nbsp;
   <a href="Lorumipsum" target="_blank" 
-  style="font-weight:bold; color:#007acc; text-decoration:none;">Project Report</a>
+  style="font-weight:bold; color:var(--accent); text-decoration:none;">Project Report</a>
 </p>
 
 
 <section style="margin-top: 40px; line-height: 1.6;">
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Abstract</h3>
 
 <p style="text-align: justify;">
     This project presents a comparative study of advanced 3D super-resolution techniques—Generative Adversarial Networks (GANs), Diffusion Models, and CuNeRF (Neural Radiance Fields)—for enhancing volumetric medical images. High-resolution 3D reconstructions are essential for accurate diagnosis but are often limited by acquisition constraints in CT and MRI. To address this, we focus on z-axis super-resolution, generating high-resolution volumes from low-resolution inputs. Using the IXI T1-weighted Brain MRI dataset, we evaluate the performance of Soup-GAN, DisC-Diff, and CuNeRF models through PSNR and SSIM metrics. The objective is to identify the most effective generative or implicit approach for achieving superior image fidelity and structural detail in 3D medical imaging.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Methodology</h3>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">SOUP-GAN: Super-Resolution MRI Using Generative Adversarial Networks</h3>
 
 <p style="text-align: justify;">
@@ -61,7 +60,7 @@ font-weight: 600;">SOUP-GAN: Super-Resolution MRI Using Generative Adversarial N
   </figure>
 </div>
   
-  <h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+  <h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">DisC-Diff: Disentangled Conditional Diffusion Model for MRI Super-Resolution</h3>
 <p style="text-align: justify;">
     DisC-Diff is a diffusion-based framework designed for multi-contrast MRI super-resolution, enabling effective fusion of complementary information from different MRI sequences (e.g., T1, T2). The model uses a disentangled U-Net architecture that separates shared and independent feature representations before merging them in a decoder to reconstruct high-resolution images.
@@ -99,7 +98,7 @@ font-weight: 600;">DisC-Diff: Disentangled Conditional Diffusion Model for MRI S
   </figure>
 </div>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">CuNeRF: Cube-Based Neural Radiance Field for Medical Image Super-Resolution</h3>
 <p style="text-align: justify;">
     CuNeRF extends Neural Radiance Fields (NeRF) for 3D medical image super-resolution using a cube-based volumetric representation. It integrates cube-based sampling, isotropic volume rendering, and hierarchical cube rendering to reconstruct high-quality medical volumes from low-resolution data.
@@ -145,7 +144,7 @@ font-weight: 600;">CuNeRF: Cube-Based Neural Radiance Field for Medical Image Su
   </figure>
 </div>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Conclusion & Future Directions</h3>
 
 <p style="text-align: justify;">

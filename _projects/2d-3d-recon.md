@@ -1,7 +1,6 @@
 ---
 layout: single
 title: "2D to 3D Reconstruction of Coronary Artery from X-ray Angiogram Images and Analysis of vFFR Techniques"
-permalink: /projects/2d-3d-recon/
 author_profile: false
 ---
 
@@ -9,16 +8,16 @@ MiRL Lab, IITM & Meril Life Sciences Project
 
 ---
 
-<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: #007acc;">
+<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: var(--accent);">
   ⬅ Projects
 </a>
 <div style="clear: both;"></div>
 
 <p style="text-align:center; margin-top:25px;">
-  🔗 <span style="font-weight:bold; color:#007acc;">GitHub: Private Repository</span>
+  🔗 <span style="font-weight:bold; color:var(--accent);">GitHub: Private Repository</span>
   &nbsp;|&nbsp;
   <a href="https://drive.google.com/file/d/1D5WoSKFwGyUa65Blt3mYDzh_MkCXaQa3/view?usp=sharing" target="_blank" 
-  style="font-weight:bold; color:#007acc; text-decoration:none;">Project Report</a>
+  style="font-weight:bold; color:var(--accent); text-decoration:none;">Project Report</a>
 </p>
 
 

@@ -1,0 +1,53 @@
+# Homepage content. Social links come from `author:` in _config.yml.
+#
+# Markup convention inside these strings (mirrors the reference site):
+#   <b>...</b>            -> green highlight (venues, awards, institutions)
+#   <strong>...</strong>  -> plain dark bold
+#   <img class="orglogo" src="/images/X.png" alt=""> -> inline institution logo
+cv_url: "https://drive.google.com/file/d/1-4xQbicaibYIyDuiOdhfQgm5eiM92CtF/view?usp=sharing"
+
+profile:
+  name: "Srivatsan Sarvesan"
+  photo: /images/Srivatsan_profile_pic.jpg
+
+# Short bio — three tight paragraphs. Keep it short; the detail belongs on the
+# Experience, Projects and Education pages.
+bio:
+  - >
+    I am a Master's student in <strong>Electrical &amp; Computer Engineering (Machine Learning &amp; Data
+    Science)</strong> at <img class="orglogo" src="/images/UCSD.png" alt=""><a href="https://ucsd.edu/"
+    target="_blank" rel="noopener">UC San Diego</a>. I work with <a href="https://pengtaoxie.github.io/"
+    target="_blank" rel="noopener">Prof. Pengtao Xie</a> on efficient, data-centric autonomous AI systems,
+    developing search and memory architectures that enable agents to reuse knowledge across tasks while
+    reducing time and inference cost. My work also explores multi-agent coordination, self-improving
+    workflows, and test-time scaling.
+  - >
+    Previously, I conducted research at the <img class="orglogo" src="/images/IIT_Madras.png" alt=""><a
+    href="https://dsai.iitm.ac.in/" target="_blank" rel="noopener">Wadhwani School of Data Science &amp; AI,
+    IIT Madras</a>, primarily in medical AI and computer vision. I received my B.Tech (Honours) in
+    Electronics &amp; Communication Engineering with a Minor in Computer Science from
+    <img class="orglogo" src="/images/NITT.png" alt=""><a href="https://www.nitt.edu/" target="_blank"
+    rel="noopener">NIT Tiruchirappalli</a>, and have also interned at
+    <img class="orglogo" src="/images/A_STAR_logo.png" alt="">A*STAR SIMTech, Singapore and
+    <img class="orglogo" src="/images/Indian_Institute_of_Science_logo.png" alt="">IISc Bengaluru.
+  - >
+    My broader research interests include ML systems, efficient training and inference, post-training and
+    reinforcement learning, as well as multimodal AI for healthcare and precision health.
+
+news:
+  - date: "Sep 2025"
+    body: "Joined <b>UC San Diego</b> for my Master's in Machine Learning &amp; Data Science."
+  - date: "Aug 2025"
+    body: "1 paper accepted in <b>Scientific Reports</b>."
+  - date: "Jul 2024"
+    body: >
+      Awarded the <b>AP-S Undergraduate Summer Research Scholarship</b> &amp; grant — one of only 34
+      worldwide — to research flexible, ML-driven antenna design on PDMS for sub-6&nbsp;GHz wearables.
+  - date: "Apr 2024"
+    body: >
+      Awarded the <b>Dr. Ram &amp; Thaila Ramanujam Foundation Research Scholarship</b> for multimodal
+      Alzheimer's disease diagnosis.
+  - date: "Mar 2023"
+    body: >
+      Selected for the <b>Summer Research Fellowship Program (SRFP)</b> by the Indian Academy of Sciences,
+      hosted at <b>IISc Bengaluru</b>.

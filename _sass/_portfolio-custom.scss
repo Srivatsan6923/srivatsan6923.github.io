@@ -6,36 +6,36 @@
    ========================================================================== */
 
 :root {
-  /* Brand palette — indigo -> violet -> cyan */
-  --c-indigo:   #4f46e5;
-  --c-violet:   #7c3aed;
-  --c-cyan:     #06b6d4;
-  --c-amber:    #d97706;
+  /* Brand palette — academic purple links, green highlights */
+  --c-purple:   #7b3294;
+  --c-purple-2: #9a4fb5;
+  --c-green:    #008837;
 
   /* Semantic tokens (light theme defaults) */
   --bg:           #ffffff;
   --bg-soft:      #f6f7fb;
   --bg-elevated:  #ffffff;
   --surface:      #ffffff;
-  --text:         #1f2430;
+  --text:         #2e2a3d;
   --text-soft:    #4b5563;
   --text-muted:   #6b7280;
   --border:       #e5e7eb;
   --border-soft:  #eef0f4;
-  --accent:       var(--c-indigo);
-  --accent-2:     var(--c-violet);
-  --accent-3:     var(--c-cyan);
+  --accent:       var(--c-purple);
+  --accent-2:     var(--c-purple-2);
+  --accent-3:     var(--c-green);
+  --highlight:    var(--c-green);
   --accent-text:  #ffffff;
   --shadow-sm:    0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
   --shadow-md:    0 4px 12px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.06);
   --shadow-lg:    0 18px 40px rgba(16, 24, 40, 0.14);
-  --gradient:     linear-gradient(120deg, var(--c-indigo), var(--c-violet) 55%, var(--c-cyan));
+  --gradient:     linear-gradient(120deg, var(--c-purple), var(--c-purple-2) 55%, #c026d3);
   --radius:       16px;
   --radius-sm:    10px;
-  --ring:         rgba(79, 70, 229, 0.35);
+  --ring:         rgba(123, 50, 148, 0.35);
 
-  --font-display: "Space Grotesk", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Verdana, sans-serif;
+  --font-body:    "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Verdana, sans-serif;
 }
 
 :root[data-theme="dark"] {
@@ -48,14 +48,15 @@
   --text-muted:   #8c93a6;
   --border:       #25304a;
   --border-soft:  #1c2438;
-  --accent:       #818cf8;
-  --accent-2:     #a78bfa;
-  --accent-3:     #22d3ee;
+  --accent:       #c98fe0;
+  --accent-2:     #dcb0ee;
+  --accent-3:     #4ade80;
+  --highlight:    #4ade80;
   --accent-text:  #0b0f1a;
   --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md:    0 6px 16px rgba(0, 0, 0, 0.45);
   --shadow-lg:    0 22px 48px rgba(0, 0, 0, 0.6);
-  --ring:         rgba(129, 140, 248, 0.45);
+  --ring:         rgba(201, 143, 224, 0.45);
 }
 
 /* --------------------------------------------------------------------------
@@ -98,8 +99,6 @@ hr { border-top-color: var(--border); }
 .greedy-nav a { color: var(--text-soft); font-family: var(--font-display); font-weight: 500; }
 .greedy-nav a:hover { color: var(--accent); }
 .greedy-nav .visible-links a:before { background: var(--gradient); height: 3px; }
-.greedy-nav__toggle:before, .greedy-nav__toggle:after,
-.greedy-nav .navicon { background: var(--text); }
 .page__footer {
   background-color: var(--bg-soft);
   color: var(--text-muted);
@@ -134,104 +133,23 @@ hr { border-top-color: var(--border); }
   margin-bottom: 2.2rem;
   font-size: 1rem;
 }
-.section-rule {
-  border: none;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
-  margin: 3.5rem auto;
-  max-width: 720px;
-}
 
 /* --------------------------------------------------------------------------
-   HERO
+   Ghost button + social icon row (footer, publications page)
    -------------------------------------------------------------------------- */
-.hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 2.5rem;
-  align-items: center;
-  padding: 1.5rem 0 2.5rem;
-  overflow: hidden;
-}
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: -40% -20% auto auto;
-  width: 520px; height: 520px;
-  background: radial-gradient(circle at center, rgba(124, 58, 237, 0.18), transparent 60%);
-  z-index: 0;
-  pointer-events: none;
-}
-.hero > * { position: relative; z-index: 1; }
-
-.hero__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--accent);
-  padding: 0.35rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-soft);
-}
-.hero__eyebrow .dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
-  animation: pulse-dot 2s infinite;
-}
-@keyframes pulse-dot {
-  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
-  70%  { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-}
-
-.hero__title {
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  margin: 1rem 0 0.6rem;
-  font-weight: 700;
-}
-.hero__title .grad {
-  background: var(--gradient);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.hero__tagline {
-  font-size: 1.15rem;
-  color: var(--text-soft);
-  max-width: 38ch;
-  margin-bottom: 1.4rem;
-}
-.hero__cta { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-bottom: 1.3rem; }
-
-.btn-grad, .btn-ghost {
+.btn-ghost {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  font-family: var(--font-display); font-weight: 600; font-size: 0.95rem;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
   padding: 0.7rem 1.3rem; border-radius: 999px;
   text-decoration: none; cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-}
-.btn-grad {
-  background: var(--gradient); color: #fff;
-  box-shadow: var(--shadow-md);
-}
-.btn-grad:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); color: #fff; }
-.btn-ghost {
   background: transparent; color: var(--text);
   border: 1px solid var(--border);
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 .btn-ghost:hover { transform: translateY(-2px); border-color: var(--accent); color: var(--accent); }
 
-.hero__socials { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.hero__socials a {
+.social-row { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+.social-row a {
   width: 42px; height: 42px; border-radius: 12px;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 1.15rem;
@@ -240,39 +158,7 @@ hr { border-top-color: var(--border); }
   background: var(--surface);
   transition: transform 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
-.hero__socials a:hover { transform: translateY(-3px); color: var(--accent); border-color: var(--accent); }
-
-.hero__photo { display: flex; justify-content: center; }
-.hero__photo img {
-  width: 290px; height: 290px; object-fit: cover;
-  border-radius: 28px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-lg);
-  transition: transform 0.4s ease;
-}
-.hero__photo img:hover { transform: translateY(-4px) rotate(-1deg); }
-
-@media (max-width: 768px) {
-  .hero { grid-template-columns: 1fr; text-align: center; padding-top: 0.5rem; }
-  .hero__tagline { margin-left: auto; margin-right: auto; }
-  .hero__cta, .hero__socials { justify-content: center; }
-  .hero__photo { order: -1; }
-  .hero__photo img { width: 200px; height: 200px; }
-}
-
-/* --------------------------------------------------------------------------
-   Quick "metric" / focus chips row
-   -------------------------------------------------------------------------- */
-.focus-row {
-  display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center;
-  margin: 0.5rem 0 1rem;
-}
-.focus-chip {
-  font-family: var(--font-display); font-size: 0.85rem; font-weight: 500;
-  padding: 0.4rem 0.9rem; border-radius: 999px;
-  background: var(--bg-soft); color: var(--text-soft);
-  border: 1px solid var(--border);
-}
+.social-row a:hover { transform: translateY(-3px); color: var(--accent); border-color: var(--accent); }
 
 /* --------------------------------------------------------------------------
    CARD GRID (projects)
@@ -310,6 +196,9 @@ hr { border-top-color: var(--border); }
 }
 .card__media { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg-soft); }
 .card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+/* logo-style thumbnails: contain + pad instead of crop */
+.card__media--contain { display: flex; align-items: center; justify-content: center; }
+.card__media--contain img { object-fit: contain; padding: 2.5rem; }
 .card:hover .card__media img { transform: scale(1.06); }
 .card__body { padding: 1.1rem 1.2rem 1.3rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
 .card__title { font-size: 1.12rem; font-weight: 600; line-height: 1.3; margin: 0; color: var(--text); }
@@ -443,3 +332,204 @@ hr { border-top-color: var(--border); }
   .reveal, .card { opacity: 1 !important; transform: none !important; transition: none; }
   html { scroll-behavior: auto; }
 }
+
+/* ==========================================================================
+   HOMEPAGE
+   Academic single-column layout: 900px centred, a bio with the portrait on the
+   right, then News / Publications / Selected Projects / Experience / Education
+   all rendered with ONE row component (media left, text right). Deliberately
+   flat — no cards, gradients or hover lifts — so the page reads as one thing.
+   Appended last so these rules beat Minimal Mistakes' `.page__content` styles.
+   ========================================================================== */
+.home {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+  font-size: 16px;
+}
+.home a { text-decoration: none; }
+.home a:hover { text-decoration: underline; }
+
+/* `<b>` is the green highlight, `<strong>` stays plain dark bold */
+.home b { color: var(--highlight); font-weight: 700; }
+.home strong { color: var(--text); font-weight: 700; }
+
+/* Section headings — flat, no rule beneath (see _layouts/home.html for why the
+   page is not wrapped in `.page__content`). */
+.home-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 2.6rem 0 1rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.home-more { text-align: right; font-size: 0.9rem; margin: 0.5rem 0 0; }
+
+/* -------------------------------- BIO ----------------------------------- */
+.bio {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 2.5rem;
+  align-items: start;
+  padding: 1.5rem 0 0.5rem;
+}
+.bio__name {
+  font-size: 2.125rem;      /* 34px, as on the reference */
+  font-weight: 400;
+  text-align: center;
+  line-height: 1.2;
+  margin: 0 0 1.3rem;
+}
+.bio__text p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0 0 1.1rem;
+}
+.bio__photo img {
+  width: 100%;
+  border: 1px solid var(--border);
+}
+
+/* Inline institution logos inside the bio.
+   Several logos are transparent black line art (IISc especially), so they need
+   a white backing plate to stay visible in dark mode — invisible on the white
+   light-mode background, which is why it is applied unconditionally. */
+.orglogo {
+  height: 1.05em;
+  width: auto;
+  vertical-align: -0.16em;
+  margin: 0 0.25em 0 0.1em;
+  background: #fff;
+  border-radius: 2px;
+  padding: 1px;
+}
+
+/* Contact links: centred, slash-separated via CSS */
+.bio__links { text-align: center; margin-top: 1.5rem; }
+.bio__links a { font-size: 1.05rem; }
+.bio__links a:not(:last-child)::after {
+  content: "/";
+  color: var(--text-muted);
+  margin: 0 0.45em;
+  display: inline-block;
+}
+
+/* -------------------------------- NEWS ---------------------------------- */
+.news-box {
+  height: 200px;
+  overflow-y: scroll;
+  padding-right: 0.75rem;
+}
+.news-box ul { margin: 0; padding-left: 1.4rem; }
+.news-box li {
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+.news-box li:last-child { margin-bottom: 0; }
+.news-box::-webkit-scrollbar { width: 10px; }
+.news-box::-webkit-scrollbar-track { background: var(--bg-soft); border-radius: 5px; }
+.news-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+.news-box::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ------------------- ROW: the one entry component ----------------------- */
+.row {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  gap: 1.6rem;
+  align-items: center;
+  margin-bottom: 1.8rem;
+}
+.row__media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+}
+.row__media img { width: 100%; height: auto; }
+/* logos are contained and capped rather than stretched to the column width.
+   Same white plate as .orglogo, for the same dark-mode reason. */
+.row__media--logo img {
+  width: auto; max-width: 82%; max-height: 110px; object-fit: contain;
+  background: #fff;
+  border-radius: 4px;
+  padding: 4px;
+}
+/* fallback tile for a paper with no thumbnail */
+.row__media-ph {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 150px; padding: 1rem;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text-muted);
+  font-size: 0.85rem; line-height: 1.4; text-align: center;
+}
+
+.row__title {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+a.row__title:hover { color: var(--accent); text-decoration: underline; }
+.row__meta { color: var(--text); font-size: 0.95rem; line-height: 1.45; }
+.row__meta .me { font-weight: 700; }
+.row__desc {
+  color: var(--text-soft);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0.4rem 0 0;
+}
+.row__links { margin-top: 0.4rem; font-size: 0.95rem; }
+.row__links a:not(:last-child)::after {
+  content: "/";
+  color: var(--text-muted);
+  margin: 0 0.4em;
+  display: inline-block;
+}
+
+@media (max-width: 700px) {
+  .bio { grid-template-columns: 1fr; gap: 1.2rem; }
+  .bio__photo { order: -1; max-width: 260px; margin: 0 auto; }
+  .row { grid-template-columns: 1fr; gap: 0.8rem; }
+  .row__media { max-width: 320px; }
+}
+
+/* Link row inside a timeline card (used by /teaching/) */
+.tl-links { margin-top: 0.7rem; font-size: 0.9rem; }
+.tl-links a { font-weight: 700; text-decoration: none; }
+.tl-links a:hover { text-decoration: underline; }
+
+/* ==========================================================================
+   Dark-mode + component patches for inherited Minimal Mistakes rules.
+   Each of these targets a rule that hardcodes a light-theme colour, so the
+   selectors here deliberately match or exceed the original's specificity.
+   ========================================================================== */
+
+/* Collapsed ("greedy") nav dropdown: was a hardcoded #fff panel, which left
+   themed link text sitting on white in dark mode. */
+.greedy-nav .hidden-links {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow-md);
+}
+.greedy-nav .hidden-links a { color: var(--text-soft); }
+.greedy-nav .hidden-links a:hover { color: var(--accent-text); background: var(--accent); }
+.greedy-nav .hidden-links:before { border-color: var(--border) transparent; }
+.greedy-nav .hidden-links:after { border-color: var(--surface) transparent; }
+.greedy-nav .hidden-links li { border-bottom-color: var(--border); }
+
+/* Brand colours on social icons are fine on white but several (GitHub's
+   #171516) vanish on the dark background — only neutralise them there. */
+:root[data-theme="dark"] .social-icons [class*="fa-"] { color: inherit; }
+
+/* `.archive a` underlines every link in the archive layout, including the
+   ghost pill button; a type+class selector takes it back. */
+a.btn-ghost, a.btn-ghost:hover { text-decoration: none; }
+
+/* Logo thumbnails on /projects/ need the same white plate as .orglogo:
+   the IISc and A*STAR marks are transparent black line art. */
+.card__media--contain img { background: #fff; }

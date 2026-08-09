@@ -1,7 +1,6 @@
 ---
 layout: single
 title: "CXRGENIE: A Multimodal Diagnostic Assistant for Chest X-Ray Interpretation and Clinical Reasoning"
-permalink: /projects/cxrgenie/
 author_profile: false
 ---
 
@@ -9,22 +8,22 @@ B.Tech Thesis
 
 ---
 
-<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: #007acc;">
+<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: var(--accent);">
   ⬅ Projects
 </a>
 <div style="clear: both;"></div>
 
 <p style="text-align:center; margin-top:25px;">
-  🔗 <span style="font-weight:bold; color:#007acc;">GitHub: Private Repository</span>
+  🔗 <span style="font-weight:bold; color:var(--accent);">GitHub: Private Repository</span>
   &nbsp;|&nbsp;
   <a href="https://drive.google.com/file/d/1aaWVmgHe0nmKkfrDaH6_7NKyxt3tsBcS/view?usp=sharing" target="_blank" 
-  style="font-weight:bold; color:#007acc; text-decoration:none;">Project Report</a>
+  style="font-weight:bold; color:var(--accent); text-decoration:none;">Project Report</a>
 </p>
 
 
 <section style="margin-top: 40px; line-height: 1.6;">
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Abstract</h3>
 
 <p style="text-align: justify;">
@@ -38,10 +37,10 @@ font-weight: 600;">Abstract</h3>
 </p>
 
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Methodology</h3>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Overall System  Architecture</h3>
 
 <p style="text-align: justify;">
@@ -61,7 +60,7 @@ font-weight: 600;">Overall System  Architecture</h3>
 </div>
 
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Core Reasoning Engine</h3>
 
 <p style="text-align: justify;">
@@ -74,7 +73,7 @@ font-weight: 600;">Core Reasoning Engine</h3>
     Before producing the final output, the agent’s response (6) is passed through guardrails to ensure safety, consistency, and compliance with clinical standards. The final response is then presented for human-in-the-loop validation (7), ensuring that clinicians remain part of the decision-making loop, enhancing reliability, transparency, and trustworthiness in high-stakes diagnostic scenarios.
 </p>
 
-  <h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+  <h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Workflow Design using LangGraph</h3>
 <p style="text-align: justify;">
     Each user session maintains a persistent state that tracks inputs, tool outputs, confidence scores, and final responses enabling adaptive, context-aware, multi-turn interactions.
@@ -86,7 +85,7 @@ font-weight: 600;">Workflow Design using LangGraph</h3>
     After tools produce intermediate outputs, relevant features are encoded and sent to a vector database to retrieve semantically similar cases or explanations. This retrieved context refines the agent’s reasoning and output generation. When ambiguity or low-confidence arises, human-in-the-loop interaction by the clinician helps seeking feedback or verification. The final outputs are synthesized with consistency checks and full traceability to ensure safe and explainable decision-making.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Integrated Tools and Capabilities</h3>
 <p style="text-align: justify;">
     The system integrates a suite of specialized tools via standardized APIs to enable robust and clinically meaningful reasoning across key medical imaging tasks. For VQA, it leverages CheXagent to provide image-grounded, contextually relevant answers to complex clinical queries based on chest X-rays. Segmentation is handled by MedSAM, which delivers precise delineation of anatomical structures and abnormalities, supporting both localization and severity scoring. For Spatial Grounding, Maira-2 enables fine-grained localization of abnormalities or anatomical landmarks, enhancing explainability and downstream analysis.
@@ -105,7 +104,7 @@ font-weight: 600;">Integrated Tools and Capabilities</h3>
     structures the outputs for clarity and proper documentation. Guardrails are implemented to ensure that responses remain focused on chest X-ray diagnostics, blocking irrelevant or potentially unsafe queries. The Image I/O module handles image preprocessing and annotates results with masks, bounding boxes, and captions, with synthetic content clearly labelled to prevent misuse.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Semantic Retrieval and Validation via Vector DB</h3>
 
 <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
@@ -126,7 +125,7 @@ font-weight: 600;">Semantic Retrieval and Validation via Vector DB</h3>
     As shown in Figure 3.2, the RAG workflow begins with the agent’s intermediate response being embedded using PubMedBERT. A top-k similarity search is then performed against the vector database, which contains preprocessed and semantically indexed clinical knowledge. The retrieved evidence is then passed back to the agent to inform its final output, ensuring factual grounding and clinical relevance throughout the reasoning pipeline.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Algorithm for Agentic query processing</h3>
 <p style="text-align: justify;">
     The Agentic Query Processing Algorithm enables intelligent, context-aware responses by combining retrieval, reasoning, and generation for medical diagnostics.
@@ -141,10 +140,10 @@ font-weight: 600;">Algorithm for Agentic query processing</h3>
 </div>
 
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Experiments and Evaluation</h3>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Experimental Setup</h3>
 
 <p style="text-align: justify;">
@@ -167,7 +166,7 @@ font-weight: 600;">Experimental Setup</h3>
     All experiments were run on an NVIDIA RTX A6000 GPU (48GB VRAM) with 256GB system RAM, supporting real-time inference, tool orchestration, and scalable multimodal processing.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Quantitative Results</h3>
 <p style="text-align: justify;">
     The agent was evaluated on VQA tasks using the ChestAgentBench and ChestBench datasets. It achieved competitive accuracy compared to state-of-the-art VLMs, demonstrating
@@ -185,7 +184,7 @@ font-weight: 600;">Quantitative Results</h3>
 
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Qualitative Results</h3>
 <p style="text-align: justify;">
     To demonstrate the reasoning capabilities and interpretability of the reasoning agent, two representative diagnostic scenarios involving chest X-ray images are presented. Each example includes a complex user prompt that mimics real-world clinical queries, followed by the system’s end-to-end response. The outputs showcase integrated tool usage (e.g., segmentation, grounding, classification), retrieved knowledge references, and the final reasoning chain produced by the language model. These qualitative cases highlight the agent’s ability to generate evidence-backed answers, localize abnormalities, and structure responses in clinically relevant formats—reinforcing both accuracy and transparency in decision-making.
@@ -208,7 +207,7 @@ font-weight: 600;">Qualitative Results</h3>
 
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Ablation Study Results</h3>
 <p style="text-align: justify;">
     To evaluate the contribution of individual components to the overall diagnostic performance of the proposed agent, an ablation study was conducted on the CheXbench dataset. As shown in Figure 4.3, key components namely the vector database, LangChain memory, and external tools were systematically removed from the full agent pipeline, and the performance was also tested using only the LLM module. The resulting impact on diagnostic accuracy was measured.
@@ -230,22 +229,22 @@ font-weight: 600;">Ablation Study Results</h3>
     optimal diagnostic accuracy.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">System Performance</h3>
 <p style="text-align: justify;">
     On average, the agent produced answers in 104 seconds on the ChestAgentBench dataset and 108 seconds on the CheXbench dataset. Across all experiments, inference times ranged from 12 seconds for simple look-ups to 198 seconds for the most tool-intensive queries. This latency is acceptable for clinical use, balancing responsiveness with the computational demands of multimodal reasoning and thus enabling near-real-time integration into diagnostic workflows. These measurements affirm the system’s capability to handle multimodal tasks efficiently.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Conclusion</h3>
     <p> This work presents CXRGENIE - a multimodal agentic workflow for intelligent chest X-ray interpretation that unifies disease classification, segmentation, visual grounding, VQA, and report generation. By integrating deep learning and large language models through LangChain and LangGraph, the system performs coordinated reasoning across multiple specialized tools, delivering reliable and explainable diagnostic support. </p> <p> Leveraging GPT-4o-mini as the central reasoning agent, the system achieved competitive results on benchmark datasets such as ChestAgentBench and CheXbench, outperforming leading open-source medical models in complex multimodal reasoning tasks. Its integration of retrieval-augmented reasoning and human-in-the-loop validation enhances factual grounding, interpretability, and clinical reliability. </p> <p> Overall, CXRGENIE demonstrates how agentic workflows can bridge the gap between explainable AI and real-world clinical decision support, setting the stage for trustworthy, multimodal reasoning systems in healthcare. </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Future Works</h3>
     <p style="text-align: justify;"> 
     Future work will focus on expanding CXRGENIE beyond chest radiographs to support modalities such as CT, MRI, and Ultrasound, as well as integrating patient history and laboratory data for richer contextual reasoning. Reinforcement learning with clinician feedback (RLHF) will be explored to continually refine decision quality and adapt behavior in real time. </p> <p> Integration of medical ontologies (e.g., SNOMED-CT, UMLS, RadLex) and Graph Neural Networks will enable concept-driven diagnostic reasoning and improve semantic consistency. Enhanced retrieval with graph-based RAG and cross-encoder reranking will further boost factual precision. </p> <p> Finally, a decentralized multi-agent architecture using the Multi-Agent Communication Protocol (MCP) will be investigated to assign specialized reasoning and retrieval tasks to cooperating agents — paving the way toward scalable, distributed clinical AI systems. </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Interface Design</h3>
     <p style="text-align: justify;"> All the UI interfaces were developed using Gradio, a Python library used for creating interactive, web-based user interfaces for machine learning models, APIs, and Python functions. Gradio simplifies building and sharing demos or applications. </p> 
 

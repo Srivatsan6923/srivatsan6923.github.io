@@ -1,0 +1,87 @@
+# Research/work roles, newest first. Rendered by _pages/experience.html.
+# `dates` is optional — an entry without it renders the role on its own.
+- org: "CIPRA.ai"
+  logo: /images/cipra_ai.jpg
+  role: "Data Science / ML Intern"
+  dates: "May 2026 – Present"
+  badge: "Healthcare Data Science · Patient Retention · Agentic AutoML"
+  body: >
+    Leading the churn and patient-retention analytics workstream for remote hypertension and diabetes
+    programs, analyzing longitudinal patient histories to derive data-driven at-risk and behavioral-churn
+    thresholds, disengagement taxonomies, and early warning triggers. Translating these patterns into
+    clinical and operational intervention protocols for identifying and re-engaging patients before churn.
+    In parallel, I built a cuffless BP estimation pipeline from raw PPG, using autonomous AutoML agents to
+    optimize few-shot subject-specific calibration from as few as ~10 samples.
+
+- org: "Playar"
+  logo: /images/playar.jpg
+  role: "Mobile Computer Vision Intern"
+  dates: "Jun 2026 – Present"
+  badge: "Multi-View Vision · 3D Reconstruction · On-Device ML"
+  body: >
+    Building a multi-view computer vision system for cricket analytics using synchronized high-frame-rate
+    iPhone video to reconstruct ball trajectories and estimate how shots played in practice nets would carry
+    and land under different ground settings. My work spans CVAT-based dataset curation, YOLO/CoreML training
+    and benchmarking, single-view ball detection, two-view synchronization and tracking, camera calibration,
+    and 3D trajectory reconstruction.
+
+- org: "Prof. Pengtao Xie @ UC San Diego"
+  logo: /images/UCSD.png
+  role: "Graduate Student Researcher"
+  dates: "Apr 2026 – Present"
+  badge: "Agentic AI · Autonomous ML · Test-Time Scaling"
+  body: >
+    Developing efficient search and memory architectures for autonomous data-engineering agents, enabling
+    knowledge reuse across tasks while reducing time and inference/API cost. My research explores cross-task
+    memory, multi-agent coordination, self-evolving workflows, and test-time scaling for data-centric
+    autonomous AI.
+
+- org: "MiRL @ Indian Institute of Technology, Madras"
+  logo: /images/IIT_Madras.png
+  role: "Research Assistant"
+  dates: "Jun 2024 – Aug 2025"
+  badge: "3D Computer Vision · AI in Healthcare"
+  body: >
+    Developed algorithms for 2D-to-3D coronary artery reconstruction from X-ray angiography, improving
+    stenosis-detection accuracy and reducing computation time via pseudo-transient vFFR. Currently building
+    deep learning models for laparoscopic cholecystectomy — video-based CVS classification and hepatocystic
+    anatomy segmentation.
+
+- org: "MICAIH Lab @ NIT Trichy"
+  logo: /images/NITT.png
+  role: "Research Assistant"
+  dates: "Aug 2023 – May 2025"
+  badge: "Deep Learning–based Diagnosis"
+  body: >
+    Built a DenseNet-based multi-scale pyramidal fusion network for retinal vasculature and FAZ segmentation
+    in OCTA images to aid diabetic-retinopathy diagnosis. Developed a multimodal, multitask framework for
+    Alzheimer's classification (NC, MCI, AD) integrating MRI and PET data.
+
+- org: "Motorola Lab @ NIT Trichy"
+  logo: /images/NITT.png
+  role: "Research Intern"
+  dates: "Sep 2024 – Dec 2024"
+  badge: "Flexible & ML-Driven Antenna Design"
+  body: >
+    Designed a flexible hexagonal patch antenna on PDMS for sub-6&nbsp;GHz 5G wearables, achieving 3.2&nbsp;dB
+    peak gain with a validated low-cost fabrication process. Compared Random Forest, XGBoost, CatBoost, and
+    LightGBM to optimize antenna parameters from full-wave EM simulation data.
+
+- org: "A*STAR SimTech, Singapore"
+  logo: /images/A_STAR_logo.png
+  role: "Research Intern"
+  dates: "Jun 2024 – Sep 2024"
+  badge: "Additive Metal Particle Defect Segmentation"
+  body: >
+    Developed a spatial-attention segmentation model to detect spatter-particle defects in X-ray Computed
+    Tomography, improving defect-detection accuracy for additive-manufacturing quality control of metal parts.
+
+- org: "Movement Control Lab @ IISc Bengaluru"
+  logo: /images/Indian_Institute_of_Science_logo.png
+  role: "Summer Research Fellow"
+  dates: "May 2023 – Jul 2023"
+  badge: "sEMG Decomposition & Motor Recruitment Analysis"
+  body: >
+    Collected and analyzed single-channel sEMG during hand-reaching tasks to extract muscle-activation
+    patterns using signal processing and ICA. Modeled sEMG signals to study motor-unit recruitment dynamics
+    during voluntary contraction.

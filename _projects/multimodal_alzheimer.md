@@ -1,7 +1,6 @@
 ---
 layout: single
 title: "FusionDecompNet: A Multimodal Multitask Learning Framework for Alzheimer’s Diagnosis via Joint MRI-PET Fusion and Auxiliary Modality Reconstruction"
-permalink: /projects/multimodal_alzheimer/
 author_profile: false
 ---
 
@@ -9,22 +8,22 @@ Dr. Ram Thaila Scholarship Project | Guide: Varun P. Gopi | MICAIH Lab, NIT Tric
 
 ---
 
-<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: #007acc;">
+<a href="/projects/" style="float: right; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: var(--accent);">
   ⬅ Projects
 </a>
 <div style="clear: both;"></div>
 
 <p style="text-align:center; margin-top:25px;">
-  🔗 <span style="font-weight:bold; color:#007acc;">GitHub: Private Repository</span>
+  🔗 <span style="font-weight:bold; color:var(--accent);">GitHub: Private Repository</span>
   &nbsp;|&nbsp;
   <a href="-" target="_blank" 
-  style="font-weight:bold; color:#007acc; text-decoration:none;">Project Report</a>
+  style="font-weight:bold; color:var(--accent); text-decoration:none;">Project Report</a>
 </p>
 
 
 <section style="margin-top: 40px; line-height: 1.6;">
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Abstract</h3>
 
 <p style="text-align: justify;"><p style="text-align: justify;">
@@ -36,7 +35,7 @@ font-weight: 600;">Abstract</h3>
 </p>
 
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: #067cf2ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
 font-weight: 600;">Methodology</h3>
 
 <p style="text-align: justify;">
@@ -56,7 +55,7 @@ font-weight: 600;">Methodology</h3>
     <img src="/images/Alzheimers/FusionDecompNet.png" 
          alt="Model Architecture Overview" 
          style="width:85%; border-radius:12px; margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-    <figcaption style="font-size:14px; color:#666;">Overview of the multimodal multitask deep learning system for Alzheimer's Disease diagnosis.</figcaption>
+    <figcaption style="font-size:14px; color:var(--text-muted);">Overview of the multimodal multitask deep learning system for Alzheimer's Disease diagnosis.</figcaption>
   </figure>
 </div>
 
@@ -65,7 +64,7 @@ font-weight: 600;">Methodology</h3>
     <img src="/images/Alzheimers/Modules.png" 
          alt="" 
          style="width:85%; border-radius:12px; margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-    <figcaption style="font-size:14px; color:#666;">Internal Architecture of the Proposed MRI–PET Fusion Framework Showing Multi-scale Convolution, Triple Attention, Classification, and Decomposer Blocks</figcaption>
+    <figcaption style="font-size:14px; color:var(--text-muted);">Internal Architecture of the Proposed MRI–PET Fusion Framework Showing Multi-scale Convolution, Triple Attention, Classification, and Decomposer Blocks</figcaption>
   </figure>
 </div>
 <p style="text-align: justify;">
@@ -84,7 +83,7 @@ font-weight: 600;">Methodology</h3>
     Overall, this unified multitask learning framework integrates <b>fusion, decomposition, and classification</b> in a single architecture, enabling efficient joint optimization and improved generalization. The auxiliary decomposition task further acts as a regularizer, guiding the fusion process toward more <b>interpretable and physiologically meaningful representations</b>—a crucial step toward explainable and data-efficient  neuroimaging analysis.
 </p>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Implementation</h3>
 
 <p style="text-align: justify;">
@@ -101,11 +100,11 @@ font-weight: 600;">Implementation</h3>
     <img src="/images/Alzheimers/MRI-PET_Preprocessing_Pipeline.png" 
          alt="MRI and PET Preprocessing Pipeline" 
          style="width:85%; border-radius:12px; margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
-    <figcaption style="font-size:14px; color:#666;">MRI and PET preprocessing and alignment pipeline for multimodal input generation.</figcaption>
+    <figcaption style="font-size:14px; color:var(--text-muted);">MRI and PET preprocessing and alignment pipeline for multimodal input generation.</figcaption>
   </figure>
 </div>
 
-<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: #406a94ff; 
+<h3 style="text-align: left; margin: 50px 0 20px; font-size: 28px; color: var(--accent); 
 font-weight: 600;">Experimental Results</h3>
 
 <p style="text-align: justify;">

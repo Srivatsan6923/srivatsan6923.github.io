@@ -1,13 +1,15 @@
 ---
-title: "Machine Learning for Engineering and Science Applications – NPTEL"
+title: "Machine Learning for Engineering and Science Applications"
 collection: teaching
-type: "MOOC course"
+type: "Teaching Assistant"
+format: "NPTEL MOOC"
+institution: "Indian Institute of Technology, Madras"
+logo: /images/IIT_Madras.png
 semester: "Spring 2025"
 professors:
   - name: "Balaji Srinivasan"
     url: "https://dsai.iitm.ac.in/faculty/balaji-srinivasan/"
   - name: "Ganapathy Krishnamurthi"
     url: "https://dsai.iitm.ac.in/faculty/ganapathy-krishnamurthi/"
-course_url: "https://nptel.ac.in/courses/106106198"  
-permalink: /teaching/2025-ml-iitm-nptel
+course_url: "https://nptel.ac.in/courses/106106198"
 ---

@@ -1,0 +1,46 @@
+# Education entries, newest first. Rendered by _pages/education.html.
+- org: "University of California, San Diego"
+  short: "UC San Diego"
+  logo: /images/UCSD.png
+  degree: "MS in ECE (Machine Learning & Data Science)"
+  dates: "Sep 2025 – Mar 2027"
+  detail: "GPA 3.46/4.0"
+  sections:
+    - label: "Selected Coursework"
+      body: >
+        <p><strong>Fall '25:</strong> Statistical Learning I, Probability &amp; Statistics for Data Science,
+        Programming for Data Analysis</p>
+        <p><strong>Winter '26:</strong> Sensing &amp; Estimation in Robotics, Deep Generative Models,
+        Optimization &amp; Acceleration of Deep Learning on Hardware Platforms</p>
+        <p><strong>Spring '26:</strong> Trustworthy Machine Learning,
+        ML for Physical Applications</p>
+
+- org: "National Institute of Technology, Tiruchirappalli"
+  short: "NIT Tiruchirappalli"
+  logo: /images/NITT.png
+  degree: "B.Tech (Hons.) in Electronics & Communication Engineering"
+  dates: "Jul 2021 – May 2025"
+  detail: "GPA 9.18/10 · Minor in CSE"
+  sections:
+    - label: "Selected Coursework"
+      body: >
+        Pattern Recognition, Statistical Theory of Communication, DSP for Medical Imaging,
+        Biomedical Signal Processing, Machine Learning for Engineering Applications,
+        Operating Systems, Data Structures &amp; Algorithms, DBMS.
+    - label: "Leadership & Activities"
+      body: >
+        • President, Office of International Relations, NIT Trichy (2024–2025)<br>
+        • Deputy Manager, Pragyan Social Responsibility Team (2022–2024)<br>
+        • Manager, Workshops Team, Probe — ECE Annual Technical Symposium (2023–2024)
+
+- org: "Indian Institute of Technology, Madras"
+  short: "IIT Madras"
+  logo: /images/IIT_Madras.png
+  degree: "B.Tech — Final-Year Exchange"
+  dates: "Jul 2024 – May 2025"
+  sections:
+    - label: "Selected Coursework"
+      body: >
+        Medical Image Analysis, Deep Learning for Imaging, Design of Medical Imaging Systems,
+        Quantum Photonics Devices &amp; Technologies, Computer Networks,
+        Mapping DSP Algorithms to Architectures, Computer Organization.

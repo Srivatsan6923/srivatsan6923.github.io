@@ -6,96 +6,21 @@ author_profile: true
 ---
 
 <h2 class="section-heading section-heading--gradient">Experience</h2>
-<p class="section-sub">Research roles across institutions and labs</p>
 
 <div class="timeline">
-
+  {% for x in site.data.experience %}
   <div class="tl-item reveal">
     <div class="tl-card">
       <div class="tl-head">
-        <img class="tl-logo" src="/images/IIT_Madras.png" alt="IIT Madras">
+        <img class="tl-logo" src="{{ x.logo }}" alt="{{ x.org }}">
         <div>
-          <div class="tl-org">MiRL @ Indian Institute of Technology, Madras</div>
-          <div class="tl-role">Research Assistant · Jun 2024 – Aug 2025</div>
+          <div class="tl-org">{{ x.org }}</div>
+          <div class="tl-role">{{ x.role }}{% if x.dates %} · {{ x.dates }}{% endif %}</div>
         </div>
       </div>
-      <span class="tl-badge">3D Computer Vision · AI in Healthcare</span>
-      <div class="tl-body">
-        Developed algorithms for 2D-to-3D coronary artery reconstruction from X-ray angiography, improving stenosis-detection
-        accuracy and reducing computation time via pseudo-transient vFFR. Currently building deep learning models for
-        laparoscopic cholecystectomy — video-based CVS classification and hepatocystic anatomy segmentation.
-      </div>
+      {% if x.badge %}<span class="tl-badge">{{ x.badge }}</span>{% endif %}
+      <div class="tl-body">{{ x.body }}</div>
     </div>
   </div>
-
-  <div class="tl-item reveal">
-    <div class="tl-card">
-      <div class="tl-head">
-        <img class="tl-logo" src="/images/NITT.png" alt="NIT Trichy">
-        <div>
-          <div class="tl-org">MICAIH Lab @ NIT Trichy</div>
-          <div class="tl-role">Research Assistant · Aug 2023 – May 2025</div>
-        </div>
-      </div>
-      <span class="tl-badge">Deep Learning–based Diagnosis</span>
-      <div class="tl-body">
-        Built a DenseNet-based multi-scale pyramidal fusion network for retinal vasculature and FAZ segmentation in OCTA
-        images to aid diabetic-retinopathy diagnosis. Developed a multimodal, multitask framework for Alzheimer's
-        classification (NC, MCI, AD) integrating MRI and PET data.
-      </div>
-    </div>
-  </div>
-
-  <div class="tl-item reveal">
-    <div class="tl-card">
-      <div class="tl-head">
-        <img class="tl-logo" src="/images/NITT.png" alt="NIT Trichy">
-        <div>
-          <div class="tl-org">Motorola Lab @ NIT Trichy</div>
-          <div class="tl-role">Research Intern · Sep 2024 – Dec 2024</div>
-        </div>
-      </div>
-      <span class="tl-badge">Flexible &amp; ML-Driven Antenna Design</span>
-      <div class="tl-body">
-        Designed a flexible hexagonal patch antenna on PDMS for sub-6&nbsp;GHz 5G wearables, achieving 3.2&nbsp;dB peak gain
-        with a validated low-cost fabrication process. Compared Random Forest, XGBoost, CatBoost, and LightGBM to optimize
-        antenna parameters from full-wave EM simulation data.
-      </div>
-    </div>
-  </div>
-
-  <div class="tl-item reveal">
-    <div class="tl-card">
-      <div class="tl-head">
-        <img class="tl-logo" src="/images/A_STAR_logo.png" alt="A*STAR">
-        <div>
-          <div class="tl-org">A*STAR SimTech, Singapore</div>
-          <div class="tl-role">Research Intern · Jun 2024 – Sep 2024</div>
-        </div>
-      </div>
-      <span class="tl-badge">Additive Metal Particle Defect Segmentation</span>
-      <div class="tl-body">
-        Developed a spatial-attention segmentation model to detect spatter-particle defects in X-ray Computed Tomography,
-        improving defect-detection accuracy for additive-manufacturing quality control of metal parts.
-      </div>
-    </div>
-  </div>
-
-  <div class="tl-item reveal">
-    <div class="tl-card">
-      <div class="tl-head">
-        <img class="tl-logo" src="/images/Indian_Institute_of_Science_logo.png" alt="IISc">
-        <div>
-          <div class="tl-org">Movement Control Lab @ IISc Bengaluru</div>
-          <div class="tl-role">Summer Research Fellow · May 2023 – Jul 2023</div>
-        </div>
-      </div>
-      <span class="tl-badge">sEMG Decomposition &amp; Motor Recruitment Analysis</span>
-      <div class="tl-body">
-        Collected and analyzed single-channel sEMG during hand-reaching tasks to extract muscle-activation patterns using
-        signal processing and ICA. Modeled sEMG signals to study motor-unit recruitment dynamics during voluntary contraction.
-      </div>
-    </div>
-  </div>
-
+  {% endfor %}
 </div>

@@ -1,0 +1,77 @@
+# Project cards. `url` is optional — entries without one render as a non-clickable card.
+# `contain: true` pads/contains the image instead of cropping it (use for logos).
+- featured: true
+  title: "CXRGenie — Multimodal Chest X-ray Diagnostic Assistant"
+  url: /projects/cxrgenie/
+  image: /images/CXRGenie/CXRGenie-front.png
+  meta: "B.Tech Thesis · MiRL Lab, IITM"
+  desc: >
+    A modular agentic AI for chest X-ray interpretation built on GPT-4o-mini, integrating segmentation,
+    classification, grounding, VQA, and report generation with a RAG-backed vector DB for
+    retrieval-augmented, human-in-the-loop reasoning.
+  tags: [Agentic AI, LLMs, RAG, Medical Imaging]
+
+- featured: true
+  title: "2D-to-3D Coronary Artery Reconstruction & Stenosis Detection"
+  url: /projects/2d-3d-recon/
+  image: /images/2D-3D_Recon/3D_recon_main.png
+  meta: "Jun 2024 – May 2025 · MiRL, IITM & Meril Life Sciences"
+  desc: >
+    Algorithms for reconstructing 3D coronary geometry from X-ray angiograms, improving stenosis-detection
+    accuracy and cutting computation time via pseudo-transient vFFR.
+  tags: [3D Vision, Medical Imaging, Reconstruction]
+
+- title: "CVS Classification & Hepatocystic Anatomy Segmentation"
+  url: /projects/cvs_classification/
+  image: /images/CVS-Classification/CVS_segmentation.png
+  meta: "Jun 2025 – Aug 2025 · MiRL Lab, IITM"
+  desc: >
+    Optimized deep models for laparoscopic cholecystectomy: video-based Critical View of Safety
+    classification and anatomy segmentation to assist surgical workflows.
+  tags: [Surgical AI, Segmentation, Video]
+
+- title: "3D Super-Resolution: GANs vs. Diffusion vs. CuNeRF"
+  url: /projects/zsuperres/
+  image: /images/Superres/Superres_front.png
+  meta: "MiRL Lab, IITM"
+  desc: >
+    Comparative study of z-axis 3D MRI super-resolution across GAN, diffusion, and implicit-field methods,
+    analyzing the quality–latency trade-offs for clinical deployment.
+  tags: [Generative Models, Diffusion, MRI]
+
+- featured: true
+  title: "FusionDecompNet — Multimodal Alzheimer's Diagnosis"
+  url: /projects/multimodal_alzheimer/
+  image: /images/Alzheimers/FusionDecompNet.png
+  meta: "MICAIH Lab, NIT Trichy · Ram-Thaila Scholarship"
+  desc: >
+    A multimodal multitask framework for Alzheimer's classification (NC/MCI/AD) via joint MRI–PET fusion
+    with auxiliary modality reconstruction.
+  tags: [Multimodal, MRI/PET, Multitask]
+
+- title: "Defect-Aware Denoising & Deblurring Network"
+  url: /projects/defect-denoise/
+  image: /images/KLA_Project/KLA_Project_front.png
+  meta: "EE5179 Deep Learning for Imaging · IIT Madras"
+  desc: >
+    An encoder–decoder with spatial-channel attention and non-local blocks for defect-preserving
+    image restoration.
+  tags: [Image Restoration, Attention]
+
+- title: "Metal Additive Manufacturing Defect Detection"
+  image: /images/A_STAR_logo.png
+  contain: true
+  meta: "Jun 2024 – Sep 2024 · A*STAR SimTech, Singapore"
+  desc: >
+    A spatial-attention segmentation model to detect spatter-particle defects in X-ray CT, improving
+    defect detection for metal additive-manufacturing quality control.
+  tags: [Segmentation, X-ray CT, Attention]
+
+- title: "sEMG Modeling & MUAP Decomposition"
+  image: /images/Indian_Institute_of_Science_logo.png
+  contain: true
+  meta: "May 2023 – Jul 2023 · Movement Control Lab, IISc"
+  desc: >
+    Collected and analyzed single-channel sEMG during hand-reaching tasks; applied signal processing and
+    ICA to extract motor-unit recruitment patterns during muscle contraction.
+  tags: [Signal Processing, ICA, Biosignals]

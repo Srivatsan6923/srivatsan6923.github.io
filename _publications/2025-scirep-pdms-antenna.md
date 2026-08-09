@@ -2,9 +2,9 @@
 title: "Low-cost Fabrication and Comparative Evaluation of Machine Learning Algorithms for Flexible PDMS-based Hexagonal Patch Antenna"
 collection: publications
 category: manuscripts
-permalink: /publication/2025-scirep-pdms-antenna
 excerpt: 'A flexible PDMS-based hexagonal patch antenna for sub-6 GHz 5G wearables, with a low-cost fabrication process and ML-driven design-parameter optimization.'
 date: 2025-08-01
+authors: 'S. Sarvesan, M. G. Reddy, S. S. Karthikeyan, P. K. Sekhar'
 venue: 'Scientific Reports'
 image: '/images/antenna_paper_img.png'
 paperurl: 'https://www.nature.com/articles/s41598-025-15678-2'

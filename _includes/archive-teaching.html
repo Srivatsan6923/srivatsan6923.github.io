@@ -1,12 +1,30 @@
-<div style="margin-bottom: 20px;">
-  <p style="font-size: 17px; margin: 0;">
-    <strong>
-      <a href="{{ post.course_url }}" target="_blank" style="color: #000; text-decoration: none;">
-        {{ post.title }}
-      </a>
-    </strong> ({{ post.semester }}) under 
-    {% for prof in post.professors %}
-      Prof. <a href="{{ prof.url }}" target="_blank" style="color: #be4bdb; text-decoration: none;">{{ prof.name }}</a>{% if forloop.last == false %}, {% endif %}
-    {% endfor %}
-  </p>
+{% comment %}
+One course on /teaching/. Uses the same timeline card as Education and
+Experience so the three pages read as one set. Colours come from theme tokens.
+{% endcomment %}
+<div class="tl-item reveal">
+  <div class="tl-card">
+    <div class="tl-head">
+      {% if post.logo %}<img class="tl-logo" src="{{ post.logo }}" alt="{{ post.institution }}">{% endif %}
+      <div>
+        <div class="tl-org">{{ post.title }}</div>
+        <div class="tl-role">
+          {{ post.type }}{% if post.format %} · {{ post.format }}{% endif %}{% if post.semester %} · {{ post.semester }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if post.institution %}<span class="tl-badge">{{ post.institution }}</span>{% endif %}
+
+    {% if post.professors %}
+    <div class="tl-body">
+      Instructor{% if post.professors.size > 1 %}s{% endif %}:
+      {% for prof in post.professors %}<a href="{{ prof.url }}" target="_blank" rel="noopener">Prof. {{ prof.name }}</a>{% unless forloop.last %}, {% endunless %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if post.course_url %}
+    <div class="tl-links"><a href="{{ post.course_url }}" target="_blank" rel="noopener">Course page ↗</a></div>
+    {% endif %}
+  </div>
 </div>
