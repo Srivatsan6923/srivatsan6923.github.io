@@ -1,5 +1,5 @@
 ---
-title: "Example post — copy this file to start a new one"
+title: "Example post: copy this file to start a new one"
 date: 2026-01-01
 description: "One-line summary shown on the /blogs/ card. Falls back to the first paragraph if omitted."
 tags:

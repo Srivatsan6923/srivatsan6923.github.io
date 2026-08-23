@@ -13,7 +13,7 @@ No Ruby needed on the host.
 
 ## Where the content lives
 
-Content is data, not markup — edit YAML, not HTML.
+Content is data, not markup: edit YAML, not HTML.
 
 | What | File |
 |---|---|
@@ -26,9 +26,9 @@ Content is data, not markup — edit YAML, not HTML.
 
 Longer pages are collections of markdown files, one per item:
 
-- `_projects/` — project detail pages (linked from a card via its `url:`)
-- `_publications/` — one file per paper; `/publications/` builds itself from them
-- `_teaching/` — one file per course
+- `_projects/`: project detail pages (linked from a card via its `url:`)
+- `_publications/`: one file per paper; `/publications/` builds itself from them
+- `_teaching/`: one file per course
 
 ## Layout
 

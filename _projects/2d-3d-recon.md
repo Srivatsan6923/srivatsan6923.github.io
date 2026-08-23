@@ -24,7 +24,7 @@ MiRL Lab, IITM & Meril Life Sciences Project
 <section style="margin-top: 40px; line-height: 1.6;">
 
 <p>
-    X-ray Coronary Angiography (XCA) is a crucial diagnostic tool for assessing coronary artery disease (CAD), yet its two-dimensional nature limits accurate visualization of complex vessel morphology. To overcome these limitations, Three-Dimensional Quantitative Coronary Angiography (3D-QCA) has emerged, enabling reconstruction of coronary arteries from multiple angiographic views—an essential step for computational fluid dynamics (CFD) simulations such as virtual Fractional Flow Reserve (vFFR). These advanced 3D models significantly enhance diagnostic precision and treatment planning.
+    X-ray Coronary Angiography (XCA) is a crucial diagnostic tool for assessing coronary artery disease (CAD), yet its two-dimensional nature limits accurate visualization of complex vessel morphology. To overcome these limitations, Three-Dimensional Quantitative Coronary Angiography (3D-QCA) has emerged, enabling reconstruction of coronary arteries from multiple angiographic views, an essential step for computational fluid dynamics (CFD) simulations such as virtual Fractional Flow Reserve (vFFR). These advanced 3D models significantly enhance diagnostic precision and treatment planning.
 
     Despite its potential, current 3D-QCA methods face key challenges, including the manual, slow, and variable process of lumen border detection, as well as the high computational cost and technical expertise required for accurate reconstruction and vFFR computation. Such limitations hinder clinical workflow efficiency and reproducibility.
 

@@ -1,7 +1,17 @@
-# Project cards. `url` is optional — entries without one render as a non-clickable card.
+# Project cards. `url` is optional; entries without one render as a non-clickable card.
 # `contain: true` pads/contains the image instead of cropping it (use for logos).
 - featured: true
-  title: "CXRGenie — Multimodal Chest X-ray Diagnostic Assistant"
+  title: "DRISHTI: On-Device Assistive Navigation for the Visually Impaired"
+  url: /projects/drishti/
+  image: /images/DRISHTI/drishti_front.png
+  meta: "Hard Hack 2026 · Best Healthcare Hack Winner"
+  desc: >
+    A wearable assistive system pairing a Raspberry Pi belt with an Android app that runs Gemma-3n vision-language
+    inference, ArcFace face recognition, and sensor-fusion fall detection on-device, behind a fully voice-driven interface.
+  tags: [On-Device AI, Assistive Tech, Android, IoT]
+
+- featured: true
+  title: "CXRGenie: Multimodal Chest X-ray Diagnostic Assistant"
   url: /projects/cxrgenie/
   image: /images/CXRGenie/CXRGenie-front.png
   meta: "B.Tech Thesis · MiRL Lab, IITM"
@@ -40,7 +50,7 @@
   tags: [Generative Models, Diffusion, MRI]
 
 - featured: true
-  title: "FusionDecompNet — Multimodal Alzheimer's Diagnosis"
+  title: "FusionDecompNet: Multimodal Alzheimer's Diagnosis"
   url: /projects/multimodal_alzheimer/
   image: /images/Alzheimers/FusionDecompNet.png
   meta: "MICAIH Lab, NIT Trichy · Ram-Thaila Scholarship"

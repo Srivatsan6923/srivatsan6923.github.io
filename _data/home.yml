@@ -10,7 +10,7 @@ profile:
   name: "Srivatsan Sarvesan"
   photo: /images/Srivatsan_profile_pic.jpg
 
-# Short bio — three tight paragraphs. Keep it short; the detail belongs on the
+# Short bio: three tight paragraphs. Keep it short; the detail belongs on the
 # Experience, Projects and Education pages.
 bio:
   - >
@@ -41,8 +41,8 @@ news:
     body: "1 paper accepted in <b>Scientific Reports</b>."
   - date: "Jul 2024"
     body: >
-      Awarded the <b>AP-S Undergraduate Summer Research Scholarship</b> &amp; grant — one of only 34
-      worldwide — to research flexible, ML-driven antenna design on PDMS for sub-6&nbsp;GHz wearables.
+      Awarded the <b>AP-S Undergraduate Summer Research Scholarship</b> &amp; grant, one of only 34
+      worldwide, to research flexible, ML-driven antenna design on PDMS for sub-6&nbsp;GHz wearables.
   - date: "Apr 2024"
     body: >
       Awarded the <b>Dr. Ram &amp; Thaila Ramanujam Foundation Research Scholarship</b> for multimodal

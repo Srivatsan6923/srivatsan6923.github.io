@@ -6,7 +6,7 @@
    ========================================================================== */
 
 :root {
-  /* Brand palette — academic purple links, green highlights */
+  /* Brand palette: academic purple links, green highlights */
   --c-purple:   #7b3294;
   --c-purple-2: #9a4fb5;
   --c-green:    #008837;
@@ -60,7 +60,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   Base overrides — apply tokens to the theme's existing elements
+   Base overrides: apply tokens to the theme's existing elements
    -------------------------------------------------------------------------- */
 html { scroll-behavior: smooth; }
 
@@ -338,7 +338,7 @@ hr { border-top-color: var(--border); }
    Academic single-column layout: 900px centred, a bio with the portrait on the
    right, then News / Publications / Selected Projects / Experience / Education
    all rendered with ONE row component (media left, text right). Deliberately
-   flat — no cards, gradients or hover lifts — so the page reads as one thing.
+   flat, with no cards, gradients or hover lifts, so the page reads as one thing.
    Appended last so these rules beat Minimal Mistakes' `.page__content` styles.
    ========================================================================== */
 .home {
@@ -354,7 +354,7 @@ hr { border-top-color: var(--border); }
 .home b { color: var(--highlight); font-weight: 700; }
 .home strong { color: var(--text); font-weight: 700; }
 
-/* Section headings — flat, no rule beneath (see _layouts/home.html for why the
+/* Section headings: flat, no rule beneath (see _layouts/home.html for why the
    page is not wrapped in `.page__content`). */
 .home-heading {
   font-size: 1.6rem;
@@ -393,7 +393,7 @@ hr { border-top-color: var(--border); }
 
 /* Inline institution logos inside the bio.
    Several logos are transparent black line art (IISc especially), so they need
-   a white backing plate to stay visible in dark mode — invisible on the white
+   a white backing plate to stay visible in dark mode, invisible on the white
    light-mode background, which is why it is applied unconditionally. */
 .orglogo {
   height: 1.05em;
@@ -523,7 +523,7 @@ a.row__title:hover { color: var(--accent); text-decoration: underline; }
 .greedy-nav .hidden-links li { border-bottom-color: var(--border); }
 
 /* Brand colours on social icons are fine on white but several (GitHub's
-   #171516) vanish on the dark background — only neutralise them there. */
+   #171516) vanish on the dark background, so only neutralise them there. */
 :root[data-theme="dark"] .social-icons [class*="fa-"] { color: inherit; }
 
 /* `.archive a` underlines every link in the archive layout, including the
@@ -533,3 +533,16 @@ a.btn-ghost, a.btn-ghost:hover { text-decoration: none; }
 /* Logo thumbnails on /projects/ need the same white plate as .orglogo:
    the IISc and A*STAR marks are transparent black line art. */
 .card__media--contain img { background: #fff; }
+
+/* Inline `code` inherited a hardcoded #fafafa plate and no colour of its own,
+   so themed body text sat on near-white in dark mode. Same selector list as the
+   original so this wins purely on being imported last. */
+p > code,
+a > code,
+li > code,
+figcaption > code,
+td > code {
+  background: var(--bg-soft);
+  border-color: var(--border);
+  color: var(--text);
+}

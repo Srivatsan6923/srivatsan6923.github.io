@@ -5,7 +5,7 @@ locale                   : "en-US"
 title                    : "Srivatsan Sarvesan"
 title_separator          : "-"
 name                     : &name "Srivatsan Sarvesan"
-description              : &description "Srivatsan Sarvesan — MS ECE (ML & Data Science) @ UC San Diego. Medical imaging, agentic AI, multimodal learning."
+description              : &description "Srivatsan Sarvesan, MS ECE (ML & Data Science) @ UC San Diego. Medical imaging, agentic AI, multimodal learning."
 url                      : https://srivatsan6923.github.io
 baseurl                  : ""
 repository               : "Srivatsan6923/srivatsan6923.github.io"
@@ -81,7 +81,7 @@ collections:
   projects:
     output: true
     permalink: /:collection/:path/
-  # Data source for the publications list only — no per-paper detail pages.
+  # Data source for the publications list only; no per-paper detail pages.
   publications:
     output: false
   teaching:

@@ -27,7 +27,7 @@ MiRL Lab, IIT Madras
 font-weight: 600;">Abstract</h3>
 
 <p style="text-align: justify;">
-    This project presents a comparative study of advanced 3D super-resolution techniques—Generative Adversarial Networks (GANs), Diffusion Models, and CuNeRF (Neural Radiance Fields)—for enhancing volumetric medical images. High-resolution 3D reconstructions are essential for accurate diagnosis but are often limited by acquisition constraints in CT and MRI. To address this, we focus on z-axis super-resolution, generating high-resolution volumes from low-resolution inputs. Using the IXI T1-weighted Brain MRI dataset, we evaluate the performance of Soup-GAN, DisC-Diff, and CuNeRF models through PSNR and SSIM metrics. The objective is to identify the most effective generative or implicit approach for achieving superior image fidelity and structural detail in 3D medical imaging.
+    This project presents a comparative study of advanced 3D super-resolution techniques for enhancing volumetric medical images: Generative Adversarial Networks (GANs), Diffusion Models, and CuNeRF (Neural Radiance Fields). High-resolution 3D reconstructions are essential for accurate diagnosis but are often limited by acquisition constraints in CT and MRI. To address this, we focus on z-axis super-resolution, generating high-resolution volumes from low-resolution inputs. Using the IXI T1-weighted Brain MRI dataset, we evaluate the performance of Soup-GAN, DisC-Diff, and CuNeRF models through PSNR and SSIM metrics. The objective is to identify the most effective generative or implicit approach for achieving superior image fidelity and structural detail in 3D medical imaging.
 </p>
 
 <h3 style="text-align: left; margin: 50px 0 20px; font-size: 36px; color: var(--accent); 
@@ -37,7 +37,7 @@ font-weight: 600;">Methodology</h3>
 font-weight: 600;">SOUP-GAN: Super-Resolution MRI Using Generative Adversarial Networks</h3>
 
 <p style="text-align: justify;">
-    SOUP-GAN enhances MRI resolution by generating high-resolution (HR) thin-slice images from low-resolution (LR) thick-slice inputs. It employs a residual-in-residual dense block (RRDB) architecture combined with a perceptual-tuned GAN to preserve structural details across 3D volumes. The model’s total loss integrates pixel-wise, perceptual, and adversarial components, ensuring both visual fidelity and consistency. Its scale-attention network refines features across multiple resolutions through three stages — pre-attention, multi-scale processing, and post-attention refinement — resulting in sharper and more coherent 3D medical images.
+    SOUP-GAN enhances MRI resolution by generating high-resolution (HR) thin-slice images from low-resolution (LR) thick-slice inputs. It employs a residual-in-residual dense block (RRDB) architecture combined with a perceptual-tuned GAN to preserve structural details across 3D volumes. The model’s total loss integrates pixel-wise, perceptual, and adversarial components, ensuring both visual fidelity and consistency. Its scale-attention network refines features across multiple resolutions through three stages (pre-attention, multi-scale processing, and post-attention refinement), resulting in sharper and more coherent 3D medical images.
 </p>
 
 <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">

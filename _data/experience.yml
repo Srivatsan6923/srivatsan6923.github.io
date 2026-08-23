@@ -1,5 +1,5 @@
 # Research/work roles, newest first. Rendered by _pages/experience.html.
-# `dates` is optional — an entry without it renders the role on its own.
+# `dates` is optional; an entry without it renders the role on its own.
 - org: "CIPRA.ai"
   logo: /images/cipra_ai.jpg
   role: "Data Science / ML Intern"
@@ -44,7 +44,7 @@
   body: >
     Developed algorithms for 2D-to-3D coronary artery reconstruction from X-ray angiography, improving
     stenosis-detection accuracy and reducing computation time via pseudo-transient vFFR. Currently building
-    deep learning models for laparoscopic cholecystectomy — video-based CVS classification and hepatocystic
+    deep learning models for laparoscopic cholecystectomy: video-based CVS classification and hepatocystic
     anatomy segmentation.
 
 - org: "MICAIH Lab @ NIT Trichy"
