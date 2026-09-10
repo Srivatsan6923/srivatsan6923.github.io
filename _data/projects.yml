@@ -6,9 +6,10 @@
   image: /projects/attention-kernel-portability/figures/figA_separation.png
   meta: "Independent research · 6 NVIDIA GPUs, 4 architecture families"
   desc: >
-    A measured study of whether an attention backend chosen on one GPU stays the right choice on another,
-    across forward prefill and single-token KV-cache decode, with bootstrap separation, dispatch probing
-    and transfer-cost analysis. Published as an interactive Astro/Observable Plot article.
+    A benchmark of forward-prefill and single-token KV-cache attention across six NVIDIA GPUs, asking whether
+    the fastest backend on one device is still the fastest on another. A winner counts only when it clears both
+    a bootstrap confidence interval and a 10% margin; under that bar the backend changed in 27 of 64 separated
+    prefill comparisons across the Ampere, Ada and Hopper parts.
   tags: [GPU Kernels, Benchmarking, PyTorch, Inference]
 
 - featured: true
