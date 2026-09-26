@@ -4,7 +4,7 @@
 #   <b>...</b>            -> green highlight (venues, awards, institutions)
 #   <strong>...</strong>  -> plain dark bold
 #   <img class="orglogo" src="/images/X.png" alt=""> -> inline institution logo
-cv_url: "https://drive.google.com/file/d/1-4xQbicaibYIyDuiOdhfQgm5eiM92CtF/view?usp=sharing"
+cv_url: "/files/Srivatsan_Sarvesan_Resume.pdf"
 
 profile:
   name: "Srivatsan Sarvesan"
