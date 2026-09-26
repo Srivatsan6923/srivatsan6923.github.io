@@ -14,7 +14,7 @@ repository               : "Srivatsan6923/srivatsan6923.github.io"
 # Drives the sidebar profile (_includes/author-profile.html) and the social
 # icon rows (_includes/socials.html). Blank fields are simply not rendered.
 author:
-  avatar           : "Srivatsan_profile_pic.jpg"
+  avatar           : "linkedin_bio_pic.png"
   name             : *name
   bio              : "MS ECE (MLDS) @ UCSD | B.Tech ECE @ NITT | Exchange Student @ IITM"
   location         : "San Diego, USA"
