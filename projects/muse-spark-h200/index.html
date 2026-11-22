@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Optimizing Muse Spark inference on H200</title>
+<meta name="description" content="How KV-cache access, expert weight reuse and decoder scheduling shaped kernel and serving performance for an 816B mixture-of-experts model on NVIDIA H200 GPUs.">
+<link rel="canonical" href="https://srivatsan6923.github.io/projects/muse-spark-h200/">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://srivatsan6923.github.io/projects/muse-spark-h200/">
+<meta property="og:title" content="Optimizing Muse Spark inference on H200">
+<meta property="og:description" content="How KV-cache access, expert weight reuse and decoder scheduling shaped kernel and serving performance for an 816B mixture-of-experts model on NVIDIA H200 GPUs.">
+<meta property="og:image" content="https://srivatsan6923.github.io/projects/muse-spark-h200/figures/card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: engineering article. Circuit-green masthead, sticky contents rail, one 760px reading column.
+   Order: where the layer waited -> how attention moved KV bytes -> how experts reused weights -> what reached 8 GPUs -> methods. */
+:root {
+  --paper: #f3f5f4; --surface: #ffffff; --ink: #12201c; --text: #2c3935; --muted: #5a6964;
+  --rule: #dbe2df; --rule-strong: #c4cfcb; --heading: #0d3a32; --link: #0a6a5a;
+  --mark: #b4541a; --mark-soft: #f6e6db; --base: #8f9b97; --base-soft: #e4e9e7; --roof: #33403c;
+  --s1: #2a78d6; --s2: #b4541a; --s3: #1b9e6b; --s4: #7a4fc4; --on-mark: #ffffff;
+  --bit-s: #e9d6f3; --bit-m: #d9e8f8; --bit-c: #d8efe3;
+  --mast-1: #0a2622; --mast-2: #0f3a33; --mast-text: #eef4f1; --mast-muted: #b9cbc4; --mast-accent: #f2a56e;
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --read: 760px; --rail: 190px; --page: 1120px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0e1412; --surface: #151d1a; --ink: #e5eeea; --text: #cdd8d4; --muted: #93a39d; --rule: #233029; --rule-strong: #31413b;
+  --heading: #e5eeea; --link: #6fd0bc; --mark: #ec8a4c; --mark-soft: #3a2518; --base: #6d7c76; --base-soft: #24302c; --roof: #c9d4d0;
+  --s1: #3f88dc; --s2: #d9733a; --s3: #25a574; --s4: #9070d8; --on-mark: #0e1412; --bit-s: #3b2848; --bit-m: #1c3550; --bit-c: #173a29;
+  --mast-1: #061714; --mast-2: #0a2b26; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #0e1412; --surface: #151d1a; --ink: #e5eeea; --text: #cdd8d4; --muted: #93a39d; --rule: #233029; --rule-strong: #31413b;
+  --heading: #e5eeea; --link: #6fd0bc; --mark: #ec8a4c; --mark-soft: #3a2518; --base: #6d7c76; --base-soft: #24302c; --roof: #c9d4d0;
+  --s1: #3f88dc; --s2: #d9733a; --s3: #25a574; --s4: #9070d8; --on-mark: #0e1412; --bit-s: #3b2848; --bit-m: #1c3550; --bit-c: #173a29;
+  --mast-1: #061714; --mast-2: #0a2b26; color-scheme: dark }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+body { margin: 0; font: 400 17px/1.72 var(--font-sans); color: var(--text); background: var(--paper); -webkit-font-smoothing: antialiased; }
+a { color: var(--link); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+:focus-visible { outline: 2px solid var(--link); outline-offset: 3px; border-radius: 2px; }
+strong { font-weight: 600; color: var(--ink); }
+code, pre { font-family: var(--font-mono); }
+code { font-size: 0.85em; background: var(--base-soft); color: var(--ink); padding: 1px 5px; border-radius: 3px; }
+pre { font-size: 12.5px; line-height: 1.55; background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 0; color: var(--ink); }
+pre .hl { background: var(--mark-soft); color: var(--mark); }
+.wrap { max-width: var(--page); margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+.masthead { background: linear-gradient(160deg, var(--mast-1), var(--mast-2)); color: var(--mast-text); }
+.site-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-block: 18px; font: 500 14px var(--font-sans); }
+.site-bar .mark { color: var(--mast-text); text-decoration: none; }
+.theme-toggle { font: 500 13px var(--font-sans); color: var(--mast-muted); background: transparent; border: 1px solid rgba(255,255,255,0.25); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.hero { padding-block: 32px 56px; display: grid; gap: 18px; max-width: 860px; }
+.eyebrow { font: 500 13px/1.4 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--mast-accent); margin: 0; }
+h1 { font: 500 clamp(36px, 5.6vw, 60px)/1.08 var(--font-display); letter-spacing: -0.015em; margin: 0; color: var(--mast-text); text-wrap: balance; }
+.subtitle { margin: -4px 0 0; font: 400 clamp(17px, 2vw, 20px)/1.45 var(--font-display); font-style: italic; color: var(--mast-muted); max-width: 40em; }
+.tablebox th[scope], .tablebox tbody th { background: var(--surface); white-space: nowrap; vertical-align: top; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.scorecard { border: 1px solid rgba(255,255,255,0.16); border-radius: 8px; padding: 14px 16px 8px; background: rgba(255,255,255,0.03); overflow-x: auto; }
+.scorecard svg { display: block; width: 100%; min-width: 600px; height: auto; }
+.scorecard .note-m { font-size: 13px; color: var(--mast-muted); margin: 6px 0 0; }
+.spec { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 700px) { .spec { grid-template-columns: minmax(0, 1fr); } }
+.spec-card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px 14px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+.spec-card h3 { margin: 0; font: 600 15px/1.35 var(--font-sans); color: var(--ink); }
+.spec-card .eyebrow-s { font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mark); }
+.spec-card svg { display: block; width: 100%; height: auto; }
+.spec-card p { font-size: 14px; line-height: 1.55; color: var(--muted); }
+.matrixbox { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); }
+table.matrix { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; font-size: 14px; }
+.matrix th, .matrix td { padding: 10px 8px; border-bottom: 1px solid var(--rule); text-align: center; vertical-align: middle; }
+.matrix thead th { font: 500 11px/1.35 var(--font-mono); letter-spacing: 0.03em; color: var(--muted); background: var(--paper); text-transform: none; }
+.matrix thead th .kind { display: block; color: var(--ink); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 10.5px; }
+.matrix tbody th { text-align: left; font: 600 14px/1.35 var(--font-sans); color: var(--ink); min-width: 15em; }
+.matrix tbody th small { display: block; font: 400 12.5px/1.45 var(--font-sans); color: var(--muted); margin-top: 2px; }
+.matrix .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); }
+.matrix .no { display: inline-block; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--rule-strong); }
+.matrix tfoot td, .matrix tfoot th { border-bottom: 0; font: 500 16px var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.matrix tfoot th { text-align: left; font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.matrix tfoot td.up { color: var(--mark); }
+.matrix tfoot td.down { color: var(--muted); }
+.matrix .final { background: var(--mark-soft); }
+.matrix tfoot td.final { font-weight: 600; font-size: 19px; }
+.matrix thead th.final .kind { color: var(--mark); }
+.lede { display: grid; gap: 12px; font: 400 clamp(18px, 2.1vw, 21px)/1.55 var(--font-display); color: var(--mast-text); max-width: 40em; }
+.lede p { margin: 0; }
+.lede strong { color: var(--mast-accent); font-weight: 500; }
+.authors { margin: 0; font-size: 15px; color: var(--mast-muted); }
+.summary { border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; overflow-x: auto; }
+.summary table { width: 100%; border-collapse: collapse; font-size: 14px; color: var(--mast-text); font-variant-numeric: tabular-nums; }
+.summary th, .summary td { padding: 7px 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.12); white-space: nowrap; }
+.summary th { font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--mast-accent); }
+.summary tr:last-child td { border-bottom: 0; }
+.summary td.num { text-align: right; }
+.summary .k { color: var(--mast-muted); font-size: 12.5px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { font: 500 14px var(--font-sans); color: var(--mast-text); text-decoration: none; border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; padding: 7px 16px; }
+.btn:hover { border-color: var(--mast-text); }
+.btn--primary { background: var(--mast-accent); color: #1b120b; border-color: var(--mast-accent); }
+
+.layout { display: grid; grid-template-columns: var(--rail) minmax(0, var(--read)); gap: 56px; padding-block: 48px 80px; }
+.toc { position: sticky; top: calc(24px + env(safe-area-inset-top, 0px)); align-self: start; font-size: 14px; }
+.toc summary { list-style: none; cursor: pointer; }
+.toc summary::-webkit-details-marker { display: none; }
+.toc-label { font: 500 12px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.toc ol { margin: 0; padding: 0 0 0 1.3em; display: grid; gap: 6px; color: var(--muted); }
+.toc a { color: var(--text); text-decoration: none; }
+.toc a:hover { color: var(--link); }
+.content { min-width: 0; display: grid; gap: 72px; }
+.content section { display: grid; gap: 16px; scroll-margin-top: 24px; min-width: 0; }
+h2 { font: 500 34px/1.15 var(--font-display); color: var(--heading); margin: 0; text-wrap: balance; }
+h3 { font: 600 18px/1.35 var(--font-sans); color: var(--ink); margin: 10px 0 0; text-wrap: balance; }
+p { margin: 0; }
+.kicker { font: 500 12px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mark); }
+
+.figure { margin: 4px 0 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 20px 16px; display: grid; gap: 12px; min-width: 0; }
+.fig-label { font: 500 12px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.fig-title { font: 600 16px/1.4 var(--font-sans); color: var(--ink); margin: 0; }
+.fig-caption { font-size: 14px; line-height: 1.6; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+.legend li { display: flex; align-items: center; gap: 7px; }
+.sw { width: 12px; height: 10px; border-radius: 2px; flex: none; }
+.svgbox { overflow-x: auto; }
+.svgbox svg { display: block; width: 100%; height: auto; min-width: 640px; }
+svg text { font-family: var(--font-mono); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule-strong); border-radius: 14px; overflow: hidden; }
+.seg button { font: 500 13px var(--font-sans); color: var(--text); background: var(--surface); border: 0; padding: 6px 13px; cursor: pointer; border-right: 1px solid var(--rule); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg-label { font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+.btn2 { font: 500 13px var(--font-sans); color: var(--text); background: var(--surface); border: 1px solid var(--rule-strong); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.btn2:hover { border-color: var(--ink); }
+.btn2--on { background: var(--ink); color: var(--surface); }
+
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin: 0; }
+@media (max-width: 520px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stats div { background: var(--surface); padding: 10px 14px; min-width: 0; }
+.stats dt { font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.stats dd { margin: 2px 0 0; font: 500 22px/1.2 var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.stats dd.hi { color: var(--mark); }
+.stats dd.est { color: var(--muted); }
+
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+.tablebox th, .tablebox td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.tablebox th { font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--paper); }
+.tablebox tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+td.hi { color: var(--mark); font-weight: 600; }
+td.wrap { white-space: normal; min-width: 14em; }
+
+.lanes { display: grid; gap: 8px; }
+.lane { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 10px; align-items: center; }
+.lane > span { font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.stream { font: 500 14px var(--font-mono); background: var(--paper); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 12px; min-height: 2.4em; color: var(--ink); overflow-wrap: anywhere; }
+.stream .acc { color: var(--s3); }
+.stream .rej { color: var(--muted); text-decoration: line-through; }
+.stream .prop { color: var(--muted); }
+.replay-status { font-size: 14px; color: var(--text); min-height: 3.2em; }
+
+.enc-in { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.enc-in input { font: 500 15px var(--font-mono); width: 11em; padding: 6px 10px; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.chip { font: 500 12px var(--font-mono); padding: 5px 10px; border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+.bits { display: grid; gap: 10px; }
+.bitrow { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 10px; align-items: center; }
+.bitrow > span { font: 500 12px var(--font-mono); color: var(--muted); }
+.cells { display: flex; flex-wrap: wrap; gap: 2px; }
+.cell { width: 22px; height: 26px; display: grid; place-items: center; font: 500 12px var(--font-mono); border-radius: 3px; background: var(--base-soft); color: var(--ink); }
+.cell.s { background: var(--bit-s); } .cell.e { background: var(--mark-soft); } .cell.m { background: var(--bit-m); } .cell.c { background: var(--bit-c); }
+.cell.gap { background: transparent; width: 10px; }
+.enc-out { font-size: 15px; line-height: 1.6; }
+.note { font-size: 14px; color: var(--muted); }
+.fallback summary { cursor: pointer; font-size: 14px; color: var(--link); }
+.fallback .tablebox { margin-top: 8px; }
+td.est { color: var(--muted); font-style: italic; }
+.k2 { color: var(--muted); font-size: 12px; }
+.appendix { border-top: 2px solid var(--rule-strong); padding-top: 28px; }
+footer { border-top: 1px solid var(--rule); padding-block: 22px 40px; font-size: 14px; color: var(--muted); }
+footer .wrap { display: grid; gap: 6px; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 28px; padding-block: 28px 64px; }
+  .toc { position: static; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); padding: 12px 16px; }
+  .toc summary .toc-label { margin: 0; }
+  .toc[open] summary .toc-label { margin-bottom: 10px; }
+  h2 { font-size: 28px; }
+}
+.unmeasured { border-left: 3px solid var(--rule-strong); background: var(--surface); border-radius: 0 6px 6px 0; padding: 10px 16px 10px 14px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.unmeasured-label { display: block; font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.unmeasured ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.join-status { font-size: 14px; color: var(--text); min-height: 2.6em; margin: 0; }
+.swipe-hint { display: none; font: 500 11px var(--font-mono); letter-spacing: 0.04em; color: var(--muted); margin-bottom: -6px; }
+.svgbox.scrolls + .swipe-hint, .swipe-hint.on { display: block; }
+.ov-row { cursor: pointer; }
+.matrix .byload th, .matrix .byload td { font: 400 11px var(--font-mono); vertical-align: bottom; padding-top: 4px; }
+.plw { display: inline-flex; gap: 4px; align-items: flex-end; }
+.pl { display: grid; justify-items: center; gap: 2px; width: 34px; }
+.pl-v { font: 500 9.5px var(--font-mono); color: var(--ink); }
+.pl-b { width: 14px; background: var(--s1); border-radius: 2px 2px 0 0; }
+.pl-u { font: 400 9px var(--font-mono); color: var(--muted); white-space: nowrap; }
+.next { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+.ov-row:hover rect.hit, .ov-row:focus rect.hit { fill: var(--mark-soft); }
+</style>
+</head>
+<body>
+<div class="masthead">
+  <div class="wrap">
+    <header class="site-bar">
+      <a class="mark" href="/">Srivatsan Sarvesan</a><a class="mark" href="/projects/" style="margin-left:auto;margin-right:16px;opacity:.8">Projects</a>
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Switch between light and dark">Theme</button>
+    </header>
+    <section class="hero" id="top">
+      <p class="eyebrow">GPU kernels · LLM inference · NVIDIA H200 · Open Kernel Challenge 2026</p>
+      <h1>Optimizing Muse Spark inference on H200</h1>
+      <p class="subtitle">How KV-cache access, expert weight reuse and decoder scheduling shaped kernel and serving performance</p>
+      <div class="lede">
+        <p>I spent the Open Kernel Challenge making Muse Spark Open, an 816-billion-parameter mixture-of-experts model, run faster on NVIDIA H200 GPUs. I wrote new kernels for attention, the expert layers and the dense projections, then carried the most useful ones into SGLang, the serving engine the challenge is built around.</p>
+        <p>The result that shaped everything after it came early. I made the projection kernels in one decoder layer faster, the profiler showed 8.7 µs less GPU-busy time, and the layer finished only 1.2 µs sooner. From then on I asked three questions of every kernel: how many bytes it moves, how often each byte is reused, and which dependency gates the next stage. The challenge's stock layer takes <strong>172.1 µs</strong> on that shape; my final one takes <strong>83.3 µs</strong>. On the eight-GPU server the gains were smaller: the one change the challenge scored reached 1.022×, and with all four of my changes stacked a 16-user test reached 1.283×.</p>
+      </div>
+      <p class="authors">Srivatsan · solo entry, October–November 2026. Every kernel and serving change here is my own design and implementation; where my code calls a library (cuBLAS and cuBLASLt, DeepGEMM, FlashAttention-3), the text says so.</p>
+      <figure class="scorecard" aria-labelledby="sc-title">
+        <p class="eyebrow" id="sc-title" style="margin:0 0 6px">Score on one H200 against the challenge's SGLang baseline</p>
+        <svg id="hero-scores" viewBox="0 0 760 250" role="img" aria-label="Five workload scores with their range across loads: attention 1.97 (1.63 to 2.33), NVFP4 experts 1.94 (1.45 to 2.68), decoder layer decode 1.73 (1.57 to 2.04), decoder layer prefill 1.50 (1.38 to 1.67), projections and router 1.25 (1.10 to 1.61)."></svg>
+        <p class="note-m">Dot: the workload's score, SGLang's time divided by mine and combined over its loads by geometric mean. Bar: the spread across those loads.</p>
+        <table class="sr-only"><caption>Scores by workload</caption><thead><tr><th>Workload</th><th>Baseline</th><th>Score</th><th>Range across loads</th></tr></thead><tbody>
+          <tr><td>Decode and verify attention</td><td>FlashAttention-3</td><td>1.97×</td><td>1.63–2.33×</td></tr>
+          <tr><td>NVFP4 expert layer</td><td>Marlin</td><td>1.94×</td><td>1.45–2.68×</td></tr>
+          <tr><td>Decoder layer, decode</td><td>SGLang layer</td><td>1.73×</td><td>1.57–2.04×</td></tr>
+          <tr><td>Decoder layer, prefill</td><td>SGLang layer</td><td>1.50×</td><td>1.38–1.67×</td></tr>
+          <tr><td>Dense projections + FP32 router</td><td>cuBLAS + SGLang router</td><td>1.25×</td><td>1.10–1.61×</td></tr>
+        </tbody></table>
+      </figure>
+    </section>
+  </div>
+</div>
+
+<main class="wrap layout">
+  <details class="toc" id="toc" open>
+    <summary><p class="toc-label">Contents</p></summary>
+    <ol>
+      <li><a href="#timed">What was timed</a></li>
+      <li><a href="#layer">Where the layer waited</a></li>
+      <li><a href="#attention">Reading a fragmented KV cache</a></li>
+      <li><a href="#staleread">A stale read under PDL</a></li>
+      <li><a href="#experts">Keeping expert weights in registers</a></li>
+      <li><a href="#serving">What carried over to eight GPUs</a></li>
+      <li><a href="#limits">Where it stops</a></li>
+      <li><a href="#methods">Methods and notes</a></li>
+    </ol>
+  </details>
+
+  <article class="content">
+
+    <section id="timed">
+      <span class="kicker">Scope</span>
+      <h2>What was timed</h2>
+      <div class="spec">
+        <div class="spec-card">
+          <span class="eyebrow-s">The GPU</span>
+          <h3>One NVIDIA H200 SXM</h3>
+          <svg id="spec-gpu" viewBox="0 0 340 150" role="img" aria-label="H200 SXM: 132 streaming multiprocessors, 50 MB of L2 cache, 141 GB of HBM3e at 4.8 terabytes per second, 989 teraflops dense BF16"></svg>
+          <p>Every kernel and layer timing used one GPU; only the serving section uses all eight.</p>
+        </div>
+        <div class="spec-card">
+          <span class="eyebrow-s">The work</span>
+          <h3>This GPU's share of one layer</h3>
+          <svg id="spec-share" viewBox="0 0 340 150" role="img" aria-label="Per GPU: 16 query heads sharing 2 KV heads of dimension 64 over an FP8 cache with one token per page; 32 of the 256 experts in NVFP4; a BF16 pooler of 4,096 by 8,192 and an FP32 router of 256 by 8,192"></svg>
+          <p>Attention reads an FP8 cache paged one token per page, over a 2,048-token window or the full context.</p>
+        </div>
+        <div class="spec-card">
+          <span class="eyebrow-s">The clock</span>
+          <h3>What one timing covers</h3>
+          <svg id="spec-clock" viewBox="0 0 340 150" role="img" aria-label="Each timing is one CUDA-graph replay on fresh inputs after an L2 flush; baseline and my replays alternate in swapped pairs, 60 repetitions, and the per-shape speedup is the median of the paired ratios"></svg>
+          <p>Both sides run the same inputs on the same GPU, so every speedup here is a paired comparison.</p>
+        </div>
+        <div class="spec-card">
+          <span class="eyebrow-s">The server</span>
+          <h3>Eight GPUs, one conversation drawn to scale</h3>
+          <svg id="spec-serve" viewBox="0 0 340 150" role="img" aria-label="Serving workload: a conversation of 13 turns, a 74,160-token first prompt followed by 12 turns of 753 new prompt tokens and about 220 output tokens each; 1, 4, 16 or 32 such users at once on eight GPUs"></svg>
+          <p>SGLang v0.5.23 with DFlash speculative decoding. Each GPU holds 2 of the 16 KV heads and 32 of the 256 experts; an all-reduce follows attention and the expert outputs are summed across GPUs.</p>
+        </div>
+      </div>
+      <p>The challenge's own benchmark service, which I call the judge, timed every single-GPU number in this article; the appendix explains how its scores combine shapes. A single GPU leaves out the collectives, scheduling and memory allocation of a real server, and the serving section shows how much that gap matters.</p>
+    </section>
+
+    <section id="layer">
+      <span class="kicker">Decoder layer · batch one</span>
+      <h2>Where the decoder layer was waiting</h2>
+      <p>One Muse Spark layer, as each GPU runs it, is a chain of about a dozen dependent kernels: the QKV projection, attention, the output projection and residual norm, and then two branches that run side by side. On the main stream the pooler projects the hidden state into the expert width. On a second stream the router scores 256 experts, a top-8 kernel picks eight of them, and a small kernel builds the per-expert routing tables. The expert GEMM needs both results before it can start.</p>
+      <p>I started by making the biggest kernels faster. The projections were among the biggest, so I rewrote them, and the profiler agreed that the GPU was busy for less time. The layer barely noticed (Figure 1).</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 1</p>
+        <h3 class="fig-title">Microseconds saved by each change, batch-one decode on a sliding-window layer</h3>
+        <div class="svgbox"><svg id="layer-delta" viewBox="0 0 720 300" role="img" aria-label="Faster projection kernels saved 8.7 microseconds of profiled GPU-busy time and 7.9 of summed kernel duration, but only 1.2 of elapsed layer time. The later routing and scheduling changes saved 6.8 microseconds of elapsed time. Overall the stock layer takes 172.1 microseconds and the final one 83.3."></svg></div>
+        <p class="fig-caption">Profiled readings come from one replay; elapsed time is the median over 60 paired replays. The stock layer, re-measured in each run, lands between 169.7 and 172.1 µs.</p>
+        <details class="fallback"><summary>The same comparisons as a table</summary><div class="tablebox"><table id="layer-table"></table></div></details>
+      </figure>
+      <p>Kernels in this layer overlap, across the two streams and through programmatic dependent launch (PDL), which lets a kernel launch before the one feeding it has finished. That makes the profiler's totals hard to read. GPU-busy time removes the overlap but still counts a kernel parked at its PDL wait, so a drop in busy time can mean shorter waits as easily as less work. Elapsed time is the only number that tells you whether the layer got faster.</p>
+      <p>My reading of the gap is that the expert GEMM had been waiting on the routing branch all along. A faster pooler simply arrived at the join earlier and waited longer (Figure 2). If that was right, the next gain had to come from the routing side, even though none of its kernels looked expensive.</p>
+      <figure class="figure" id="fig-join">
+        <p class="fig-label">Figure 2</p>
+        <h3 class="fig-title">The fork and join in one decode layer, and why a faster pooler barely moved it</h3>
+        <ul class="legend"><li><span class="sw" style="background: var(--s1)"></span>Attention</li><li><span class="sw" style="background: var(--s3)"></span>Projections</li><li><span class="sw" style="background: var(--s4)"></span>Experts</li><li><span class="sw" style="background: var(--base)"></span>Norms, routing, glue</li></ul>
+        <div class="svgbox"><svg id="deps" viewBox="0 0 720 252" role="img" aria-label="Dependency schematic: after the norm, the pooler on the main stream and the router, top-8 and routing-table kernels on a second stream both feed the expert GEMM, which waits for the later of the two. Numbered marks show the four routing and scheduling changes between the 90.1 µs and 83.3 µs versions."></svg></div>
+        <div class="controls"><span><span class="seg-label">Step</span><span class="seg" data-group="join"><button type="button" data-v="0" aria-pressed="true">Starting point</button><button type="button" data-v="1" aria-pressed="false">Faster pooler</button><button type="button" data-v="2" aria-pressed="false">Faster routing</button></span></span></div>
+        <div class="svgbox"><svg id="join" viewBox="0 0 720 172" role="img" aria-label="Illustration of the join: two branches start together; the expert GEMM starts when the later one finishes. Shortening the earlier branch only lengthens its wait; shortening the later branch moves the join."></svg></div>
+        <p class="join-status" id="join-status" aria-live="polite"></p>
+        <p class="fig-caption">Top: a logical schematic of the final layer, not a timeline; the dashed arrow is the cross-stream event the expert GEMM waits on. Bottom: an illustration of my hypothesis. Bar lengths are not measured, and the arrival order is inferred from Figure 1 rather than observed in a trace.</p>
+      </figure>
+      <p>So I went after the routing branch with four changes: (1) chaining its kernels with PDL so that each launches while the previous one runs, (2) moving the router's output memset to the start of the layer, where it hides under attention, (3) a top-8 kernel that handles each token in a single warp instead of reducing across warps, and (4) a retuned split of the router's K dimension. A newer attention kernel for this shape landed in the same period, so I credit the result to the set as a whole: elapsed layer time went from 90.1 to 83.3 µs.</p>
+      <p>Two earlier changes followed the same logic without making any kernel faster at all: building the routing tables off the main stream, and letting the expert GEMM start loading its weights before its PDL wait. The projection kernels and the one-launch router themselves are in the appendix. They mattered less than I first thought, which is the point of this section.</p>
+      <p>The lesson I took from this layer is that at batch one a decoder layer is a dependency graph, and the profiler's totals hide which edge is critical. Even the final version is a chain of about a dozen kernels, each boundary adding a launch, a wait and a round trip through memory. A persistent kernel that keeps the whole layer on chip is what I would build next.</p>
+      <aside class="unmeasured"><span class="unmeasured-label">Open questions</span><ul>
+        <li>Which branch really arrives last: <code>%globaltimer</code> stamps at the end of the pooler, the routing tables and the start of the expert GEMM would settle it.</li>
+        <li>How much each of the four routing changes contributed on its own.</li>
+        <li>What one kernel boundary costs in this chain.</li>
+      </ul></aside>
+    </section>
+
+    <section id="attention">
+      <span class="kicker">Attention · score 1.97× over FlashAttention-3</span>
+      <h2>Reading a fragmented KV cache</h2>
+      <p>The timed call covers the whole attention step SGLang runs for one layer: normalizing queries and keys, rotary embeddings on sliding-window layers, writing the new keys and values into the FP8 cache, attending over the window or the full context, and a sigmoid-gated output. Each GPU holds 16 query heads and 2 KV heads of dimension 64. Batches have 1, 16 or 32 requests with contexts drawn within ±7.5% of 80,000 tokens, and carry one new token per request in decode or eight in speculative verify. The cache uses one token per page, so consecutive tokens can sit anywhere in memory, and that one detail drives most of this section.</p>
+      <p>Full-context decode reads two 128-byte rows per cached token, one of keys and one of values. At batch 32 that is 655.36 MB at the nominal 80,000 tokens, which the H200's 4.8 TB/s could stream in 136.5 µs at best. Each byte feeds only about 16 FLOPs per query, so this is a pure gather problem: the kernel is as fast as it can pull scattered rows out of HBM.</p>
+      <p>My first kernel's attention loop managed 1.61 TB/s on batch-16 full decode (203.8 µs), about a third of the peak. I assumed the page-table lookups were the bottleneck and loaded each entry one step earlier to hide its latency. It made things slightly worse: the batch-32 call went from 445.5 to 450.7 µs. That negative result was the useful one, because it told me the latency was not in the indices.</p>
+      <p>The problem was how the warp touched memory. Each pair of lanes copied one token row, so one instruction reached 16 different rows, each needing its own page lookup, and used only half of two 32-byte sectors in each. Every sector ended up requested twice, by two separate instructions (Figure 3). I remapped the lanes so that eight of them copy one aligned 128-byte row together, 16 bytes each: one instruction now covers four complete rows. On the same shape the call fell from 450.7 to 206.3 µs. The same version also loaded each page id once per token and shared it with a warp shuffle, and added an L2 prefetch hint, so I count the gain for the three together.</p>
+      <figure class="figure" id="fig-gather">
+        <p class="fig-label">Figure 3</p>
+        <h3 class="fig-title">Four copy instructions of one warp, before and after the lane remap</h3>
+        <div class="controls"><span style="display:flex; gap:8px; flex-wrap:wrap"><button type="button" class="btn2" id="g-play">Play</button><button type="button" class="btn2" id="g-step">Next instruction</button></span></div>
+        <div class="svgbox"><svg id="gather" viewBox="0 0 720 420" role="img" aria-label="Side by side, the four copy instructions for a 16-token tile. Before the remap each instruction touches 16 rows and half of two sectors in each, so every sector is requested twice; after, each instruction copies four whole rows and every sector is requested once."></svg></div>
+        <p class="fig-caption" id="gather-cap"></p>
+      </figure>
+      <p>The final kernel takes 180.1 µs on that shape against FlashAttention-3's 384.3 µs (2.13×), an effective 3.64 TB/s of nominal KV data. The remaining distance to the 136.5 µs floor is the part I understand least. Figure 4 shows all twelve timed shapes: the long-context ones are where the gather work pays, and the short sliding-window ones are a different problem, covered below.</p>
+      <figure class="figure" id="fig-attn">
+        <p class="fig-label">Figure 4</p>
+        <h3 class="fig-title">Attention latency on all twelve shapes, against FlashAttention-3</h3>
+        <div class="svgbox"><svg id="attn-overview" viewBox="0 0 720 330" role="img" aria-label="Speedup over FlashAttention-3 for twelve shapes, from 1.55 to 2.99 times; select a row for its details"></svg></div>
+        <div class="controls">
+          <span><span class="seg-label">Mode</span><span class="seg" data-group="mode"><button type="button" data-v="decode" aria-pressed="true">Decode</button><button type="button" data-v="verify" aria-pressed="false">Verify</button></span></span>
+          <span><span class="seg-label">Batch</span><span class="seg" data-group="batch"><button type="button" data-v="1" aria-pressed="false">1</button><button type="button" data-v="16" aria-pressed="false">16</button><button type="button" data-v="32" aria-pressed="true">32</button></span></span>
+          <span><span class="seg-label">Layer</span><span class="seg" data-group="layer"><button type="button" data-v="sliding" aria-pressed="false">Sliding</button><button type="button" data-v="full" aria-pressed="true">Full</button></span></span>
+        </div>
+        <dl class="stats" id="attn-stats"></dl>
+        <p class="fig-caption" id="attn-cap"></p>
+        <details class="fallback"><summary>All twelve shapes as a table</summary><div class="tablebox"><table id="attn-table"></table></div></details>
+      </figure>
+      <h3>Splitting the context, and merging it back</h3>
+      <p>A single request has only two KV heads, far too little parallelism for 132 SMs, so the context has to be split. I give every block an equal share of all requests' keys laid end to end, which fills one wave whatever the mix of lengths; a block that straddles two requests simply produces two partial results (Figure 5). Each partial keeps a running maximum and normalizer, and a merge kernel combines them with a base-2 log-sum-exp. The split buys parallelism with partial-result traffic and an extra kernel, and at batch one that merge is a visible share of the call.</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 5</p>
+        <h3 class="fig-title">Equal shares of one flat key range, whatever the request lengths</h3>
+        <div class="svgbox"><svg id="splitkv" viewBox="0 0 720 200" role="img" aria-label="Three requests of different lengths laid end to end and cut into eight equal block shares; blocks that straddle a request boundary write two partial results, and a merge combines the partials of each request."></svg></div>
+        <p class="fig-caption">Three requests and eight blocks; the real kernel uses many more blocks.</p>
+      </figure>
+      <h3>Verify needed tensor-core math</h3>
+      <p>Verify has a different bottleneck. Eight draft tokens raise the math per cached byte eightfold, to about 128 FLOP per byte, so the gather stops being the whole story. To see what limited my verify kernel I built three variants of it on a synthetic batch-32 full-context case: the full kernel took 424.9 µs, a loads-only version 176.0 µs and a math-only version 395.3 µs (Figure 6). The math alone, including its FP8-to-FP16 conversions, took nearly all of the time and barely overlapped the loads.</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 6</p>
+        <h3 class="fig-title">Verify kernel split into its loads and its math, synthetic batch-32 full context</h3>
+        <div class="svgbox"><svg id="verify-diag" viewBox="0 0 720 150" role="img" aria-label="Full verify kernel 424.9 microseconds, loads only 176.0, math only 395.3: the math accounts for nearly all of the time."></svg></div>
+        <p class="fig-caption">If loads and math overlapped well, the full kernel would sit near the longer of the two bars.</p>
+      </figure>
+      <p>So I moved both matrix products to FP8 warpgroup MMA (wgmma), with operands in shared memory and causal masking inside the 8-token block. An earlier layout choice helped here: the gather already writes each row in the 128-byte swizzle that wgmma's shared-memory descriptors expect, so the keys are used exactly where they land.</p>
+      <p>Getting there took a detour. My first wgmma version kept one operand in registers and failed 13 of 16 tests, with errors near 1.41 on every full-context verify test, as if each MMA were reading the previous one's register operand. Moving both operands to shared memory fixed it. I treat that as a working fix rather than a diagnosis; my own fence ordering or register lifetimes could explain it as well as the hardware.</p>
+      <p>Decode still uses FP8 <code>mma.sync</code>, and on Hopper that instruction does not run natively in FP8: compiling one for sm_90a yields twelve <code>F2FP</code> conversions and two FP16 <code>HMMA</code> operations (see the appendix). A wgmma decode tile is where I would look for the next attention gain.</p>
+      <h3>Sliding-window layers: one launch per call</h3>
+      <p>Sliding-window layers have the opposite problem. A call moves only 0.5 to 17 MB of KV data, under 4 µs of transfer at 4.8 TB/s, so launches and synchronization decide its time. I gave each request one Hopper thread-block cluster that normalizes and rotates the new token, writes it to the cache, attends over the window on 6 to 16 SMs and merges partial results through distributed shared memory, all in one launch. Batch-one sliding decode takes 7.0 µs this way, against 21.0 µs for the baseline's chain of separate kernels.</p>
+      <p>One shape stayed slow, and I only understood why after writing SM ids and timestamps from inside the kernel. At verify batch 16, the 112 blocks of 16 clusters of seven ran on 106 SMs, so 12 blocks had to share an SM in pairs. Those blocks spent 17.3–18.6 thousand cycles in their KV loop against a median of 10.7 thousand for blocks alone on an SM, and the whole call waits for its slowest cluster (Figure 7). Moving that shape to clusters of six, with shared memory padded so that only one block fits per SM, brought it from 18.1–18.3 µs to 15.1–15.6 µs over two runs each.</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 7</p>
+        <h3 class="fig-title">Where 112 cluster blocks landed on 132 SMs, verify at batch 16, sliding window</h3>
+        <div class="svgbox"><svg id="clusters" viewBox="0 0 720 250" role="img" aria-label="Of 132 SMs, 100 ran one block, 6 ran two blocks and 26 ran none. Blocks sharing an SM spent 17.3 to 18.6 thousand cycles in the KV loop against 10.7 thousand for blocks alone."></svg></div>
+        <p class="fig-caption">Counts come from the in-kernel trace; which particular SMs held two blocks is not shown, so their positions in the grid are illustrative.</p>
+      </figure>
+      <aside class="unmeasured"><span class="unmeasured-label">Open questions</span><ul>
+        <li>Whether the remap cut memory traffic or only request count: an L2 and DRAM sector comparison of the two versions would tell.</li>
+        <li>The remap on its own, without the page-id and prefetch changes.</li>
+        <li>Where the rest of the distance to the floor goes at batch 32: bytes in flight per SM and the FP16 conversion of V are my suspects.</li>
+      </ul></aside>
+    </section>
+
+    <section id="staleread">
+      <span class="kicker">Correctness</span>
+      <h2>A stale read under programmatic dependent launch</h2>
+      <p>The bug I learned the most from passed every unit test. For verify at batch one on sliding-window layers, a small prologue kernel normalizes and rotates the eight new query rows, writes them in FP8 to a buffer <code>q8</code>, and immediately tells its dependents they may launch. Under PDL the attention kernel starts early, works out its partition and issues page-table loads, then executes <code>griddepcontrol.wait</code>. Only after that wait may it read <code>q8</code>, because the wait is what guarantees the prologue's writes are visible.</p>
+      <p>The judge's timed recheck, which replays the graph on fresh inputs, failed on that one shape with a relative error of 0.777 against an allowed 0.15, as if the kernel had read the previous call's queries. The PTX showed why: the <code>q8</code> loads had become non-coherent, read-only loads (<code>ld.global.nc</code>) and had moved above the wait (Figure 8). I had declared <code>q8</code> as <code>const __restrict__</code>, which promises the compiler that nothing changes the buffer while the kernel runs. A PDL producer running concurrently breaks that promise, so moving the loads was legal, and the wait's own <code>"memory"</code> clobber did not stop it.</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 8</p>
+        <h3 class="fig-title">Where the q8 loads sat relative to the wait</h3>
+        <div class="svgbox"><svg id="hoist" viewBox="0 0 720 230" role="img" aria-label="Three columns: in the source the q8 load follows griddepcontrol.wait; in the failing build the read-only q8 loads were placed above the wait, before the prologue's writes were guaranteed visible; after the fix an ordered load stays below the wait."></svg></div>
+        <p class="fig-caption">The failing build's order is as seen in that build's PTX, which was not kept; the rebuild below is real compiler output.</p>
+      </figure>
+      <p>This bug also depends on the compiler. A later rebuild of the same source with nvcc 13.5 happened to keep the loads below the wait, still on the read-only path:</p>
+<pre>griddepcontrol.wait;
+  ...
+ld.global.nc.u32    %r494, [%rd74];        <span class="hl">// q8 loads, read-only path, now below the wait</span>
+ld.global.nc.u32    %r495, [%rd74+16];</pre>
+      <p>The declaration is wrong either way. The fix reads <code>q8</code> after the wait with an ordered <code>ld.global.cg</code> in volatile inline assembly with its own memory clobber, so the compiler keeps the two in program order; it passed every recheck.</p>
+<pre>__device__ void pdl_wait() { asm volatile("griddepcontrol.wait;" ::: "memory"); }
+
+// before: q8 is const uint8_t* __restrict__, and this load became ld.global.nc above the wait
+qa = *reinterpret_cast&lt;const uint32_t*&gt;(q8 + off);
+// after: read q8 once the wait has returned, with an ordered L2 load
+<span class="hl">asm volatile("ld.global.cg.u32 %0, [%1];" : "=r"(v) : "l"(p) : "memory");</span></pre>
+      <p>Correctness had a price: the ordered loads cost 4.1 µs on batch-one full decode and 7.0 µs at batch 16, so I enabled PDL only where the prologue sits on the critical path, verify at batch one on sliding layers. My rule since then is simple: never read a PDL producer's output through the read-only path. The experiment that would pin the explanation down, removing only <code>__restrict__</code>, I have not run.</p>
+    </section>
+
+    <section id="experts">
+      <span class="kicker">Mixture of experts · score 1.94× over Marlin</span>
+      <h2>Keeping expert weights in registers</h2>
+      <p>Each GPU holds 32 of the 256 experts. One expert is 3 × 4,096² weights in NVFP4: 4-bit E2M1 codes (0, ±0.5, ±1, ±1.5, ±2, ±3, ±4, ±6) with one E4M3 scale per 16 weights, 28.31 MB before the FP32 global scales of the gate/up and down tensors. Activations are BF16, so every weight has to become BF16 before it reaches the tensor cores. In decode each expert serves only a few tokens, so the experts the router touches set the minimum weight traffic, and the job is to stream those bytes as fast as HBM allows.</p>
+      <p>Marlin, the baseline, moves these weights at an estimated 0.90–2.17 TB/s, 19–45% of the peak. Early on I measured how fast a plain loader could stream the packed weights: 3.90–4.05 TB/s for 604 MB with a <code>cp.async</code> ring. My GEMM at the time managed about 2 TB/s, so memory was not the limit; the instructions spent on dequantization and the round trip through shared memory were, and a count of the compiled instructions agreed. That told me where to look: make dequantization cheap, and keep the weights out of shared memory.</p>
+      <figure class="figure" id="fig-dequant">
+        <p class="fig-label">Figure 9</p>
+        <h3 class="fig-title">One weight fragment, from packed codes to the tensor core</h3>
+        <div class="svgbox"><svg id="datapath" viewBox="0 0 720 230" role="img" aria-label="Data path: one 32-bit word of eight E2M1 codes becomes BF16 values in nine integer operations, four BF16x2 multiplies apply the E4M3 block scale, and the fragment feeds mma.sync as the 16-row operand; FP32 global scales apply in the epilogue."></svg></div>
+        <div class="enc-in"><span class="seg-label">Pick a code</span><span class="seg" data-group="e2m1" id="e2m1-pick"></span></div>
+        <div class="bits" id="e2m1-bits"></div>
+        <p class="enc-out" id="e2m1-out" aria-live="polite"></p>
+        <p class="fig-caption">The weights are repacked once at load time so that one 32-bit word is one thread's eight-weight fragment. Integer operations drop each code's three magnitude bits into the two lowest exponent bits and the top mantissa bit of a BF16 lane, and its sign into the sign bit. The result is the code's value × 2<sup>−126</sup>, exactly, including the subnormal 0.5; the scales restore the missing factor, also exactly.</p>
+      </figure>
+      <p>The bit placement in Figure 9 is what makes the kernel cheap. There is no lookup table and no float conversion: the code's bits are already a tiny BF16 number once they sit in the right place, and the block-scale multiply that has to happen anyway also undoes the 2<sup>−126</sup>. The final kernel then puts 16 weight rows on the 16-row side of <code>mma.sync m16n8k16</code> and up to 8 tokens on the 8-column side. With one token, seven of the eight columns multiply zeros. I accepted that waste on purpose: the time was going into dequantization and data movement, and in exchange the dequantized weights feed the MMA straight from registers. From 8 to 256 tokens each lane loads its weights with <code>ld.global.nc.L1::no_allocate</code> into a 4- to 8-stage register window that never touches shared memory; at a single token, a shared-memory ring turned out to be faster.</p>
+      <figure class="figure" id="fig-moe">
+        <p class="fig-label">Figure 10</p>
+        <h3 class="fig-title">The expert layer by batch size, against Marlin</h3>
+        <div class="svgbox"><svg id="moe-trend" viewBox="0 0 720 270" role="img" aria-label="Latency of Marlin and this kernel at 1 to 256 tokens: the speedup is 2.67 at one token, narrows to 1.45 at 32 tokens and recovers to about 2 at 128 and 256 tokens, where the hot-expert kernel takes the busiest experts; select a batch for its details"></svg></div>
+        <div class="controls"><span><span class="seg-label">Tokens</span><span class="seg" data-group="moe"><button type="button" data-v="0" aria-pressed="true">1</button><button type="button" data-v="1" aria-pressed="false">8</button><button type="button" data-v="2" aria-pressed="false">16</button><button type="button" data-v="3" aria-pressed="false">32</button><button type="button" data-v="4" aria-pressed="false">128</button><button type="button" data-v="5" aria-pressed="false">256</button></span></span></div>
+        <dl class="stats" id="moe-stats"></dl>
+        <div class="svgbox"><svg id="moe-bw" viewBox="0 0 720 150" role="img" aria-label="Estimated weight bandwidth of Marlin and this kernel at the selected batch, against the 4.8 TB/s HBM peak"></svg></div>
+        <p class="fig-caption">Experts touched and weight bytes are estimates from simulating the judge's routing for the busiest GPU; estimated bandwidth divides those bytes by the measured time. Routing is redrawn on every run, so the same shape moved by about ±4% between runs of identical code.</p>
+        <details class="fallback"><summary>All six batch sizes as a table</summary><div class="tablebox"><table id="moe-table"></table></div></details>
+      </figure>
+      <p>The register path wins while each weight serves only a few tokens. At 32 tokens my kernel's lead narrows to 1.45× (143.6 against Marlin's 207.7 µs), because the same warps must issue both the loads and the math. By 128 and 256 tokens the busiest expert receives an estimated 63 and 140 tokens and would be dequantized over and over, so experts with more than 32 tokens go to a second kernel that feeds each dequantized fragment to eight MMAs instead of one or two. That kernel launches right behind the main persistent kernel without waiting at its start, fills SMs as the main kernel's blocks retire, and waits only at its end. I suspect a design that stages weights through shared memory would win once reuse gets high enough, and I would like to know where that crossover sits.</p>
+      <h3>Prefill needed a different layout</h3>
+      <p>Prefill reverses the balance. At 753 to 16,384 new tokens the busiest experts receive hundreds or thousands of tokens each, so every weight is reused many times and the math dominates. Activations must stay in BF16, which rules out the FP8 tensor cores. None of the libraries I checked during the challenge (CUTLASS examples 55 and 69, FlashInfer, TensorRT-LLM and triton_kernels) offered an NVFP4 grouped GEMM with 16-element scale groups for Hopper, so I wrote one in Gluon, Triton's lower-level dialect.</p>
+      <p>I started in plain Triton 3.8, which compiled the dequantization loop to about 7.6 SASS instructions per weight, and I found no way to give it the register layout it needed. Gluon's explicit layouts let each thread load whole 32-bit words that decode straight into its own fragment, and the dequantized weights feed wgmma as its register operand. That is the arrangement that failed me in the verify kernel, so I checked it hard: here the compiler emits the wgmma sequence, and the Gluon kernel matched my earlier Triton kernel bit for bit in a self-test on the judge and passed every judge test.</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 11</p>
+        <h3 class="fig-title">The 753-token expert GEMMs, one experiment at a time</h3>
+        <div class="svgbox"><svg id="prefill-steps" viewBox="0 0 720 260" role="img" aria-label="Under even tuning routing: Marlin 707, my Triton kernel 717, my Gluon kernel 474 microseconds. Under the judge's skewed routing: worst-case grid 550.7, persistent 511.0; in a later run, persistent 510.8, with small tiles 455.7."></svg></div>
+        <p class="fig-caption">Each group is its own paired comparison and should not be chained with the others. The first group spread tokens evenly over the 32 experts, as my early tuning did; the other two use the judge's routing.</p>
+      </figure>
+      <p>On the 753-token expert GEMMs the Gluon kernel took 474 µs against 717 µs for my earlier Triton kernel, which itself ran level with Marlin at 707 µs. That looked like a solid win until I logged the judge's actual routing. My tuning had spread tokens evenly over the experts. The real routing looks nothing like that (Figure 12).</p>
+      <figure class="figure" id="fig-skew">
+        <p class="fig-label">Figure 12</p>
+        <h3 class="fig-title">Routes per expert, one 753-token prefill on one GPU</h3>
+        <ul class="legend"><li><span class="sw" style="background: var(--s4)"></span>Routes to the expert</li><li><span class="sw" style="background: var(--mark); height: 3px"></span>Cumulative share</li><li><span class="sw" style="background: var(--base); height: 3px"></span>Cumulative share if spread evenly</li></ul>
+        <div class="svgbox"><svg id="skew" viewBox="0 0 720 250" role="img" aria-label="Routes per expert, hottest first: 720, 327, 133, 100, then a long tail; 16 of 32 experts received no routes. The hottest expert holds 53 percent of routes and the top four 94 percent."></svg></div>
+        <p class="fig-caption">One 753-token call on a sliding-window layer: 1,359 routes landed on 16 of the GPU's 32 experts. The busiest expert takes 53.0% of the routes (720 of the 753 tokens, 95.6%) and the top four 94.2%. Other 753-token draws looked alike, with the busiest expert at 708–734 routes.</p>
+      </figure>
+      <p>One expert receiving almost every token changes what a good kernel looks like. A grid sized for the worst case was mostly empty tiles, each holding an SM, so I made the kernel persistent over active tiles only: 511.0 µs instead of 550.7 µs with the judge's routing. In a later run, a small-tile region for the long tail of lightly used experts took it from 510.8 to 455.7 µs. At 16K tokens I went further and expanded the eight busiest experts from 4-bit to BF16 on every call, running them through DeepGEMM's BF16 grouped GEMM while the rest stayed on my kernel; the expert layer took 4,711 µs against 5,203 µs with the 4-bit kernel alone. That last result comes from tuning on one H200 and never ran in the server.</p>
+      <h3>The prefill layer as a whole</h3>
+      <p>The scored prefill layer wraps this expert path with cuBLAS for the dense projections and FlashAttention-3 for attention, plus routing-layout and combine kernels I rewrote around the expert GEMM. I deliberately left the dense GEMMs to the library: at these sizes it is already near the best algorithm I could find. Per shape, the layer is 1.29× faster on the first full-attention turn and up to 1.75× on a 16K-token first turn over a cached sliding window (Figure 13).</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 13</p>
+        <h3 class="fig-title">Prefill layer time by shape, SGLang against mine</h3>
+        <div class="svgbox"><svg id="prefill-layer" viewBox="0 0 720 330" role="img" aria-label="Prefill layer per shape: speedups from 1.29 to 1.75 times; later turns process 753 new tokens and first turns 16,384."></svg></div>
+        <p class="fig-caption">Turns 1 and 4 add 753 new tokens to an 80,000-token context for 1 and 4 requests; first turns process 16,384 tokens.</p>
+      </figure>
+      <aside class="unmeasured"><span class="unmeasured-label">Open questions</span><ul>
+        <li>Tensor-core utilization in the decode kernel, to confirm the zero-padded columns really are free.</li>
+        <li>Where a shared-memory design overtakes the register path: a sweep over tokens per expert on real routing would find it.</li>
+        <li>Whether the 16K hot tier holds up inside the server.</li>
+      </ul></aside>
+    </section>
+
+    <section id="serving">
+      <span class="kicker">SGLang v0.5.23 · 8×H200</span>
+      <h2>What carried over to eight GPUs</h2>
+      <p>The last stage moved the work into SGLang, serving the full model on eight H200s to 1, 4, 16 and 32 concurrent users of multi-turn coding conversations, with DFlash speculative decoding: a small drafter proposes 8 tokens, the full model checks them in one pass, and each step committed 3.9 to 4.2 tokens on average. The challenge scores throughput per GPU at the per-user output speed the stock server reaches, and caps time to first token at twice the stock server's, so there is no trading user latency for throughput.</p>
+      <p>I expected the kernels to carry over directly. They did not, and the reason is what this workload spends its time on. The benchmark counts cached prompt tokens as throughput: at one user it credits the node with 52,705 tokens per second while the user receives 142 output tokens per second. Each conversation opens with a 74,160-token prompt, and as users are added, those first prompts take over the GPUs. I built a simple time model from the per-kernel times; it reproduced the stock server at all four loads and predicted two of my gains closely, and it says first-turn prefill takes half to almost three quarters of GPU time (Figure 14).</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 14</p>
+        <h3 class="fig-title">Where the stock server's GPU time goes, by load (time model)</h3>
+        <ul class="legend"><li><span class="sw" style="background: var(--s1)"></span>First-turn prefill</li><li><span class="sw" style="background: var(--s3)"></span>Later-turn prefill</li><li><span class="sw" style="background: var(--s4)"></span>Decode (draft + verify)</li><li><span class="sw" style="background: var(--base-soft); border: 1px solid var(--rule-strong)"></span>Host and idle</li></ul>
+        <div class="svgbox"><svg id="timeshare" viewBox="0 0 720 200" role="img" aria-label="Modeled share of GPU time: at 4 users first-turn prefill 50 percent, later-turn prefill 10, decode 40; at 16 users 64, 10, 20 and 6 idle; at 32 users 71, 11, 13 and 5 idle."></svg></div>
+        <p class="fig-caption">Estimates from my time model, not a profile of the server. At one user the first turn is amortized outside the measured window, so that load is not shown.</p>
+      </figure>
+      <p>That picture explains the rest of this section. Decode kernels, the ones I had worked hardest on, are a shrinking share as load grows; anything that frees GPU time during the long first prompts matters more. Figure 15 builds the server up one change at a time.</p>
+      <figure class="figure">
+        <p class="fig-label">Figure 15</p>
+        <h3 class="fig-title">Building the server up, one change at a time</h3>
+        <div class="matrixbox"><table class="matrix" id="patch-matrix"></table></div>
+        <p class="fig-caption">Each column is one run, compared with the stock server measured in that same run. Only the first column was scored over all four loads; the others are shorter single-load tests, which the challenge treats as indicative. A 32-user repeat of the KV-pool change alone gave 1.061×.</p>
+      </figure>
+      <p>The one change the challenge scored has nothing to do with my kernels: it reshapes the KV-cache budget. Muse Spark has 46 sliding-window layers and 16 full-attention layers, yet SGLang's generic default gives the sliding-window pool 0.8 of the budget, as though it needed the whole context. A Muse-specific default of 0.1 moves that memory to the full-attention pool, which grows from 1,889,034 to 3,854,370 token slots. The change scored 1.022× across the four loads, with almost all of the gain at 32 users: 1.065×, or 12,638 to 13,454 tok/s/GPU. That is the load where long prompts fill the full-attention cache fastest, which is consistent with capacity limiting the stock server there.</p>
+      <p>The kernels added more on top in shorter tests. With the MoE kernel on top of the KV pool, the server reached 1.200× at one user (6,282 to 7,541 tok/s/GPU) and 1.229× at 32 (12,638 to 15,533); with the prefill row split instead, 1.136× at 32 (12,695 to 14,418). With all four changes stacked, a 16-user test reached 1.283×: throughput rose from 12,301 to 15,781 tok/s/GPU while each user's output rate rose from 17.2 to 22.2 tok/s, outputs agreed with stock, and peak memory stayed within 0.1 GB of it. First-token latency improved alongside throughput (Figure 16).</p>
+      <aside class="unmeasured"><span class="unmeasured-label">Reading the shorter tests</span><ul>
+        <li>They describe combinations and do not isolate any single change. The scored KV-pool run gave 1.003× at 16 users against a different stock measurement, so the two cannot be subtracted.</li>
+        <li>The stacked run reports 1.283× as its scoring statistic and also lists a same-load throughput ratio of 1.30, which I could not reconcile without the benchmark's internals.</li>
+        <li>The stacked server had fewer full-attention slots, 2,389,448, than the MoE-only runs (2,516,076) or the KV-pool change alone (3,854,370); which change took the memory is still open.</li>
+      </ul></aside>
+      <figure class="figure">
+        <p class="fig-label">Figure 16</p>
+        <h3 class="fig-title">Time to first token, 90th percentile: stock server against mine, same run</h3>
+        <ul class="legend"><li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Stock</li><li><span class="sw" style="background: var(--mark); border-radius: 50%; width: 12px; height: 12px"></span>Mine</li></ul>
+        <div class="svgbox"><svg id="ttft-dumbbell" viewBox="0 0 720 260" role="img" aria-label="First-turn 90th percentile time to first token fell in every check run, for example from 84.4 to 67.4 seconds at 16 users; later-turn latency fell from 3.26 to 0.93 seconds at 32 users with the MoE kernel."></svg></div>
+        <p class="fig-caption">The minutes-long first-turn tail is queueing: each 74,160-token first prompt waits behind other users' first prompts. Later turns reuse a mostly cached context. Values are the reported 90th percentiles; the reports do not give request counts per group.</p>
+        <details class="fallback"><summary>The same values as a table</summary><div class="tablebox"><table id="ttft-table"></table></div></details>
+      </figure>
+      <p>One experiment went the other way, and I think it is the most instructive. I tried scheduler settings that hold prefill back behind running decodes. They scored 0.990×. At 16 users the later-turn 90th percentile time to first token reached 1.49 s against stock's 0.34 s, over the cap, so that load was excluded and counted at 0.964 (11,766 against 12,208 tok/s/GPU). The other three loads stayed within 1% of stock. In hindsight Figure 14 predicts this: on this workload prefill is most of the work, and delaying it only moves the queue.</p>
+    </section>
+
+    <section id="limits">
+      <span class="kicker">Limits</span>
+      <h2>What carries over, and where it stops</h2>
+      <p>The three questions from the opening decided every design here: bytes moved, reuse per byte and the gating dependency. The answers, though, depend on page size 1, the FP8 cache, the judge's routing and Hopper itself. On another GPU the lane mapping, fragment layout, wgmma placement, cluster sizes and PDL behavior would each need fresh work, and the layer result rests on one shape on one H200, without collectives and without a trace.</p>
+      <p>The serving result is the one I would weigh most carefully. The scored gain came from how SGLang divides its KV memory, and the kernels' gains showed up only in shorter tests of combined changes. A full four-load run of all the changes against a fresh stock baseline is the experiment I most want to see.</p>
+      <h3>What I would build next</h3>
+      <ul class="next">
+        <li><strong>A persistent decoder-layer kernel</strong> that keeps the whole batch-one layer on chip, to remove the dozen kernel boundaries that Figure 2 is about.</li>
+        <li><strong>A wgmma decode tile</strong> for attention, to stop paying for FP8-to-FP16 conversion on every MMA.</li>
+        <li><strong>A prefill-first server</strong>: the time model says first prompts own the GPUs at high load, so that is where the next serving gain should come from.</li>
+      </ul>
+    </section>
+
+    <section id="methods" class="appendix">
+      <span class="kicker">Appendix</span>
+      <h2>Methods and implementation notes</h2>
+      <h3>How the kernels were timed</h3>
+      <p>Each kernel workload ran in the judge on one H200 SXM against its SGLang baseline, with PyTorch 2.14.1 and CUDA 13.0.3; the judge does not publish the driver, clocks or power policy. A timed call is a CUDA-graph replay of one invocation on fresh inputs, preceded by reading a buffer larger than the 50 MB L2. My replays and SGLang's take turns on the same inputs in swapped pairs, and the judge subtracts its fixed replay cost of about 4 µs from both sides. A shape's speedup is the median over repetitions (60 for the decode layer) of SGLang's time divided by mine, and my per-shape time is SGLang's median divided by that speedup.</p>
+      <p>A workload's score combines shapes into loads. A load's time is the weighted sum of its shapes' times, and the score is the geometric mean over loads of SGLang's load time divided by mine:</p>
+      <div class="tablebox"><table>
+        <thead><tr><th>Workload</th><th>Loads</th><th>How shapes are weighted</th></tr></thead>
+        <tbody>
+          <tr><td>Attention, decode layer</td><td class="num">6</td><td class="wrap">Each load pairs a sliding-window shape (weight 46) with a full-attention shape (weight 16), matching the layer counts</td></tr>
+          <tr><td>Prefill layer</td><td class="num">3</td><td class="wrap">Turn loads plus a first-turn load with weights 16, 138, 16 and 16</td></tr>
+          <tr><td>Projections</td><td class="num">6</td><td class="wrap">Five layers per load</td></tr>
+          <tr><td>MoE</td><td class="num">6</td><td class="wrap">One shape per load</td></tr>
+        </tbody>
+      </table></div>
+      <p>Recomputing from the per-shape times reproduces the judge's 1.968 and 1.733. Because loads mix shapes, a single shape can land outside a workload's load range: the batch-one layer in the opening (2.07×) is half of the batch-one decode load, which scored 2.04×. Each run reports a 95% interval of at least ±1.5%; the judge does not say how it is formed, and it reflects timing noise on one input stream rather than variety in the inputs. My own tuning used the same replay and read-flush method, after an early write-based flush left dirty lines whose write-back inflated every timing by 6–11 µs and led the tuner to pick the wrong configurations.</p>
+      <p>All the final kernels passed every judge test under the challenge's precision rules: expert weights stay in NVFP4, dense weights in BF16 and the cache in FP8; attention may use FP8 queries and softmax probabilities; the FP32 router may run as a BF16 high/low pair with FP32 accumulation; and every key in the window or context is attended. Projection outputs must be within 1% relative L2 error of an FP64 reference, and the router's within 0.01%. On the server, each run compared its outputs with the stock server by KL divergence and prefix agreement over 32 reference turns, and every run reported here passed.</p>
+      <h3>Projections: fewer bytes, and a one-launch router</h3>
+      <p>At one token a projection is a pure weight stream. The pooler (4,096 × 8,192, BF16) is 67.1 MB, a 13.98 µs floor at 4.8 TB/s. A 12-bit encoding keeps each weight's low byte and replaces its high byte with a 4-bit code, the sign plus an offset into a 16-binade window ([2<sup>−19</sup>, 2<sup>−3</sup>) for these matrices), which shrinks the payload to 50.3 MB and the floor to 10.49 µs before correction data.</p>
+      <p>Weights inside the window reconstruct bit-exactly; the few outside it, about 1.4 per 10,000, are stored as a fixed value plus an exact FP32 correction applied after the GEMM, whose exact size I did not count. My kernel runs the batch-one pooler in 14.93 µs against cuBLAS's 20.75 µs (1.39×). At larger token counts it picks, per shape and at load time, among cuBLAS, cuBLASLt algorithms and my own kernels, so part of the projection score there comes from choosing the best library algorithm. Its one-hot probe rows, which read single weight columns, come out exact.</p>
+      <figure class="figure" id="fig-enc">
+        <p class="fig-label">Figure A1</p>
+        <h3 class="fig-title">Encode one BF16 weight in 12 bits</h3>
+        <div class="enc-in">
+          <label for="enc-v" class="seg-label">Weight</label>
+          <input id="enc-v" type="text" inputmode="decimal" value="0.0137" aria-describedby="enc-out">
+          <button type="button" class="chip" data-w="0.0137">typical</button><button type="button" class="chip" data-w="-0.0021">negative</button><button type="button" class="chip" data-w="0.00000031">tiny</button><button type="button" class="chip" data-w="0.21">large</button>
+        </div>
+        <div class="bits" id="enc-bits"></div>
+        <p class="enc-out" id="enc-out" aria-live="polite"></p>
+      </figure>
+      <p>The router scores 256 experts per token with FP32 weights, because a small error can change which experts are picked. My kernel splits each weight into two BF16 halves, w ≈ hi + lo (about 16 significant bits), and runs both tensor-core products into one FP32 accumulator in a single launch; the baseline runs an FP32 GEMM at up to 8 tokens and two BF16 GEMMs with separate reductions above that. The relative L2 error against the judge's FP64 reference was 2.6×10<sup>−6</sup> on its 8- and 9-token tests, against a limit of 10<sup>−4</sup> and 2.9×10<sup>−6</sup> for the stock router. I checked the score error and the judge's selection rule, under which each chosen expert must score within 0.05 of the reference's eighth best, but not top-8 agreement on near-tie rows.</p>
+      <figure class="figure">
+        <p class="fig-label">Figure A2</p>
+        <h3 class="fig-title">Router latency vs token count</h3>
+        <div class="svgbox"><svg id="router" viewBox="0 0 720 250" role="img" aria-label="Router latency at six token counts: the one-launch kernel takes 5.4 to 9.2 µs against the baseline's 10.2 to 26.3 µs"></svg></div>
+        <p class="fig-caption">Router (256 experts × 8,192, FP32 weights) on one H200: the baseline's FP32 path at up to 8 tokens and its two-GEMM BF16 split above, against my one-launch BF16 hi + lo kernel. The baseline's 8-token time is its FP32 path at its largest size.</p>
+      </figure>
+      <h3>Theoretical ceilings</h3>
+      <figure class="figure">
+        <p class="fig-label">Figure A3</p>
+        <h3 class="fig-title">H200 bandwidth and compute ceilings, with estimated achieved throughput</h3>
+        <div class="svgbox"><svg id="roof" viewBox="0 0 720 360" role="img" aria-label="Roofline of the H200: 4.8 TB/s bandwidth slope meeting 989 TFLOP/s BF16 at about 206 FLOP per byte. Estimated achieved points for the batch-one pooler, the one-token expert layer and decode and verify attention at batch 32 all lie on or under the bandwidth slope, left of the ridge."></svg></div>
+        <p class="fig-caption">Ceilings: 4.8 TB/s HBM, 989 TFLOP/s dense BF16 (ridge ~206 FLOP/byte) and 1,979 dense FP8 (ridge ~412). Points are estimates: arithmetic intensity from the nominal bytes and FLOPs, achieved throughput from the measured time. Intensities: projections 2 FLOP per 2-byte weight per token; experts 2 FLOP per 0.5625-byte weight per routed token; attention 16 FLOP per KV byte per query.</p>
+      </figure>
+      <h3>Attention implementation notes</h3>
+      <p>Cluster size is chosen per shape with <code>cudaOccupancyMaxActiveClusters</code>, and shapes or devices without the larger cluster sizes fall back to the split kernel. The scheduling trace recorded SM ids and <code>%globaltimer</code> per block and phase. At batch 32 the 224 blocks cannot avoid sharing at clusters of seven, and clusters of 4 lost because each block then reads more of the keys.</p>
+      <h3>FP8 mma.sync on sm_90a</h3>
+      <p>One FP8 <code>mma.sync.m16n8k32</code> in a test kernel, compiled with nvcc 13.5 (<code>-arch=sm_90a -O3</code>) and disassembled with <code>cuobjdump -sass</code>, becomes twelve FP8-to-FP16 conversions and two FP16 tensor-core instructions:</p>
+<pre>LDG.E R13, desc[UR4][R2.64+0x180]
+F2FP.F16.E4M3.UNPACK_B R16, R14         <span class="hl">// 12 conversions, two FP8 values each</span>
+F2FP.F16.E4M3.UNPACK_B R14, R14.H1
+  ...                                   // 8 more
+F2FP.F16.E4M3.UNPACK_B R7, R13.reuse
+F2FP.F16.E4M3.UNPACK_B R11, R13.H1
+HMMA.16816.F32 R4, R4, R16, RZ          <span class="hl">// two m16n8k16 FP16 MMAs</span>
+HMMA.16816.F32 R4, R8, R14, R4</pre>
+    </section>
+
+  </article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Srivatsan · Muse Spark Open on NVIDIA H200 · Open Kernel Challenge 2026</span>
+  </div>
+</footer>
+
+<!-- DATA:BEGIN -->
+<script type="application/json" id="article-data">{"hero":[{"w":"Decode and verify attention","base":"FlashAttention-3","s":1.9683377521033483,"lo":1.633532894076725,"hi":2.326284950003185,"run":"45927a93"},{"w":"NVFP4 expert layer","base":"Marlin","s":1.9431826451471124,"lo":1.4460381562456481,"hi":2.6745898895212585,"run":"1e70f4ad"},{"w":"Decoder layer, decode","base":"SGLang layer","s":1.7327145926783198,"lo":1.5691271940370282,"hi":2.044447207402719,"run":"61987590"},{"w":"Decoder layer, prefill","base":"SGLang layer","s":1.4997328210572896,"lo":1.382792337762245,"hi":1.666726611125246,"run":"d3102457"},{"w":"Dense projections and FP32 router","base":"cuBLAS + SGLang router","s":1.250207813695356,"lo":1.1016817880061962,"hi":1.608788395904437,"run":"b5218b5f"}],"layer":{"d12":{"run":"a6c7631f","elapsed":112.18,"busy":116.5,"ksum":138.5,"stock":169.95},"d13":{"run":"e7b27077","elapsed":111.01,"busy":107.8,"ksum":130.6,"stock":171.01},"d37":{"run":"8f4db7ff","elapsed":90.1,"stock":169.73},"d53":{"run":"61987590","elapsed":83.28,"busy":91.2,"ksum":107.6,"stock":172.11}},"attn":[{"mode":"decode","batch":1,"layer":"sliding","fa3":21.02,"ours":7.02,"mb":0.524288},{"mode":"decode","batch":1,"layer":"full","fa3":30.88,"ours":19.07,"mb":20.48},{"mode":"decode","batch":16,"layer":"sliding","fa3":26.67,"ours":10.01,"mb":8.388608},{"mode":"decode","batch":16,"layer":"full","fa3":200.83,"ours":100.01,"mb":327.68},{"mode":"decode","batch":32,"layer":"sliding","fa3":31.17,"ours":13.67,"mb":16.777216},{"mode":"decode","batch":32,"layer":"full","fa3":384.29,"ours":180.13,"mb":655.36},{"mode":"verify","batch":1,"layer":"sliding","fa3":23.39,"ours":10.21,"mb":0.52608},{"mode":"verify","batch":1,"layer":"full","fa3":35.74,"ours":22.01,"mb":20.48},{"mode":"verify","batch":16,"layer":"sliding","fa3":28.93,"ours":14.99,"mb":8.41728},{"mode":"verify","batch":16,"layer":"full","fa3":205.25,"ours":132.75,"mb":327.68},{"mode":"verify","batch":32,"layer":"sliding","fa3":34.32,"ours":19.84,"mb":16.83456},{"mode":"verify","batch":32,"layer":"full","fa3":389.74,"ours":241.95,"mb":655.36}],"attn_split_b32":174.8,"gather":{"before":450.66,"after":206.28},"moe":[{"tokens":1,"marlin":79.89,"ours":29.87,"experts":2.5,"mb":72.0},{"tokens":8,"marlin":144.22,"ours":73.3,"experts":8.4,"mb":238.0},{"tokens":16,"marlin":189.49,"ours":103.9,"experts":11.9,"mb":338.0},{"tokens":32,"marlin":207.68,"ours":143.62,"experts":15.9,"mb":450.0},{"tokens":128,"marlin":457.71,"ours":234.07,"experts":22.6,"mb":639.0},{"tokens":256,"marlin":618.94,"ours":311.99,"experts":24.0,"mb":679.0}],"prefill_steps":{"marlin":707.0,"triton":717.0,"gluon":474.0,"grid":550.7,"persistent":511.0,"persistent2":510.8,"smalltile":455.7,"w4_16k":5203.0,"hot_16k":4711.0},"verify_diag":{"full":424.9,"loads":176.0,"math":395.3},"cluster":{"blocks":112.0,"sms":106.0,"sharing":12.0,"lo":17.3,"hi":18.6,"alone":10.7},"prefill_layer":[{"case":"turn-1-sliding","label":"Turn 1, sliding","base":1190.88,"ours":832.5},{"case":"turn-1-full","label":"Turn 1, full","base":1541.81,"ours":1197.55},{"case":"turn-4-sliding","label":"Turn 4, sliding","base":3475.3,"ours":2240.39},{"case":"turn-4-full","label":"Turn 4, full","base":4914.61,"ours":3743.47},{"case":"first-turn-full-ctx0","label":"First turn, full, empty cache","base":18201.52,"ours":10640.98},{"case":"first-turn-sliding-ctx32768","label":"First turn, sliding, 32K cached","base":17013.12,"ours":9741.35},{"case":"first-turn-full-ctx32768","label":"First turn, full, 32K cached","base":20821.25,"ours":13899.08},{"case":"first-turn-full-ctx65536","label":"First turn, full, 64K cached","base":23896.7,"ours":17230.85}],"timeshare":[{"conc":4,"first":50.0,"later":10.0,"decode":40.0,"idle":0.0},{"conc":16,"first":64.0,"later":10.0,"decode":20.0,"idle":6.0},{"conc":32,"first":71.0,"later":11.0,"decode":13.0,"idle":5.0}],"node_tok_s":52704.8,"skew":[720.0,327.0,133.0,100.0,22.0,12.0,12.0,10.0,7.0,5.0,4.0,2.0,2.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],"router":[{"m":1,"base":10.21,"ours":5.39},{"m":8,"base":26.3,"ours":5.51},{"m":16,"base":14.88,"ours":5.84},{"m":32,"base":15.55,"ours":6.5},{"m":128,"base":16.08,"ours":7.03},{"m":256,"base":17.38,"ours":9.2}],"pooler":{"base":20.75,"ours":14.93,"floor16":13.981013333333333,"floor12":10.48576},"serve":[{"series":"kv","conc":1,"v":1.0117,"kind":"scored","run":"ac754859","stock":6511.9,"cand":6588.1},{"series":"kv","conc":4,"v":1.0089,"kind":"scored","run":"ac754859","stock":9886.8,"cand":9975.1},{"series":"kv","conc":16,"v":1.0028,"kind":"scored","run":"ac754859","stock":12297.7,"cand":12332.5},{"series":"kv","conc":32,"v":1.0646,"kind":"scored","run":"ac754859","stock":12637.9,"cand":13453.8},{"series":"moe","conc":1,"v":1.2,"kind":"check","run":"803907c7","stock":6282.0,"cand":7540.9},{"series":"moe","conc":32,"v":1.229,"kind":"check","run":"ea4f2658","stock":12638.0,"cand":15532.9},{"series":"rows","conc":32,"v":1.136,"kind":"check","run":"ddda4c10","stock":12695.0,"cand":14418.3},{"series":"stack","conc":16,"v":1.283,"kind":"check","run":"e563641d","stock":12301.0,"cand":15780.6},{"series":"kvcheck","conc":32,"v":1.061,"kind":"check","run":"2f4a116c","stock":12617.0,"cand":13381.2}],"sched":{"score":0.9902},"kvscore":1.0217041673336469,"ttft":[{"name":"KV pool + MoE kernel","run":"803907c7","conc":1,"sf":8.97,"of":7.984,"sl":0.22,"ol":0.196},{"name":"All changes stacked","run":"e563641d","conc":16,"sf":84.41,"of":67.436,"sl":0.35,"ol":0.28},{"name":"KV pool + MoE kernel","run":"ea4f2658","conc":32,"sf":185.88,"of":163.302,"sl":3.26,"ol":0.925},{"name":"KV pool + prefill row split","run":"ddda4c10","conc":32,"sf":183.35,"of":165.766,"sl":2.81,"ol":1.014}],"ledger":[["Attention score","1.968\u00d7","evidence/judge/ca69_muse_attention_decode_submission.45927a93d43a4b76.txt","observation"],["MoE score","1.943\u00d7","evidence/judge/e77_muse_moe_w4a16_submission.1e70f4ad17814e7a.txt","observation"],["Decode-layer score (final file)","1.733\u00d7","evidence/judge/d53_muse_decode_layer_submission.6198759028b140d4.txt","observation"],["Prefill-layer score","1.500\u00d7","evidence/judge/p34_muse_prefill_layer_submission.d310245767344702.txt","observation"],["Projection score (final file)","1.250\u00d7","evidence/judge/final2_muse_bf16_proj_submission.b5218b5f52064fd0.txt","observation"],["Stock vs final layer, batch-one sliding","172.11 \u2192 83.28 \u00b5s","evidence/judge/d53_\u2026txt row 1","observation"],["Projection swap: GPU busy / elapsed","116.5 \u2192 107.8 / 112.18 \u2192 111.01 \u00b5s","evidence/judge/d12_\u2026, d13_\u2026 profiles","observation"],["Routing and scheduling bundle","90.10 \u2192 83.28 \u00b5s","evidence/judge/d37_\u2026, d53_\u2026","observation (bundle)"],["Gather ablation, batch-32 full decode","450.66 \u2192 206.28 \u00b5s","evidence/judge/ca2_\u2026, ca3_\u2026","observation, confounded"],["Split kernel bandwidth","655.36 MB / 174.8 \u00b5s = 3.75 TB/s","evidence/judge/ca69_\u2026 profile 5","estimate (nominal payload)"],["Marlin estimated bandwidth","19\u201345% of 4.8 TB/s","data/derived.json moe.*.marlin_pct","estimate"],["753-token routing draw","1,359 routes, 16 experts","evidence/judge/p17_\u2026.log:21","observation"],["KV pool scored score","1.022\u00d7","evidence/serving/ac7548590c1f419c.json","observation"],["Stacked check, 16 users","1.283\u00d7 (statistic)","evidence/serving/full_nolookup_c16.txt","observation, check run"],["Stale-read recheck","0.777 vs 0.15","evidence/judge/ca46_submit.log:17","observation"],["Join arrival order","routing later (hypothesis)","none: no trace","inferred"]]}</script>
+<!-- DATA:END -->
+<script>
+(function () {
+  var D = JSON.parse(document.getElementById('article-data').textContent);
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent, text) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (attrs['font-family']) e.style.fontFamily = attrs['font-family'];
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function clear(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild); }
+  function tip(node, t) { el('title', {}, node, t); }
+  function css(name) { return 'var(' + name + ')'; }
+  function grow(rect, w) { rect.style.transition = 'width 0.45s ease'; requestAnimationFrame(function () { rect.setAttribute('width', w); }); }
+  function arrowDefs(s) {
+    var d = el('defs', {}, s);
+    var m = el('marker', { id: 'ah-' + s.id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, d);
+    el('path', { d: 'M0,0 L10,5 L0,10 z', fill: css('--muted') }, m);
+    var m2 = el('marker', { id: 'ahm-' + s.id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto-start-reverse' }, d);
+    el('path', { d: 'M0,0 L10,5 L0,10 z', fill: css('--mark') }, m2);
+  }
+  function box(s, x, y, w, h, label, color, sub) {
+    var g = el('g', {}, s);
+    el('rect', { x: x, y: y, width: w, height: h, rx: 4, fill: color }, g);
+    el('text', { x: x + w / 2, y: y + h / 2 + (sub ? -2 : 4), 'text-anchor': 'middle', 'font-size': 11, fill: css('--on-mark') }, g, label);
+    if (sub) el('text', { x: x + w / 2, y: y + h / 2 + 12, 'text-anchor': 'middle', 'font-size': 9.5, fill: css('--on-mark') }, g, sub);
+    return g;
+  }
+  function arrow(s, d, mark) { el('path', { d: d, fill: 'none', stroke: mark ? css('--mark') : css('--muted'), 'stroke-width': 1.4, 'stroke-dasharray': mark ? '4 3' : '', 'marker-end': 'url(#' + (mark ? 'ahm-' : 'ah-') + s.id + ')' }, s); }
+
+  var root = document.documentElement, tbtn = document.getElementById('theme-toggle');
+  try { var saved = localStorage.getItem('muse-theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+  tbtn.addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('muse-theme', next); } catch (e) {}
+  });
+  if (matchMedia('(max-width: 900px)').matches) document.getElementById('toc').open = false;
+
+
+  function seg(group, onChange) {
+    var bx = document.querySelector('.seg[data-group="' + group + '"]');
+    var btns = bx.querySelectorAll('button');
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        btns.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        onChange(b.getAttribute('data-v'));
+      });
+    });
+    var on = bx.querySelector('[aria-pressed="true"]');
+    return on ? on.getAttribute('data-v') : null;
+  }
+
+  /* Hero: score and load range per workload (masthead colors). */
+  (function () {
+    var s = document.getElementById('hero-scores');
+    var L = 300, R = 700, lo = 1, hi = 2.8, top = 26, rh = 42;
+    function X(v) { return L + (R - L) * (v - lo) / (hi - lo); }
+    [1, 1.5, 2, 2.5].forEach(function (v) {
+      el('line', { x1: X(v), x2: X(v), y1: 14, y2: top + rh * 5 - 8, stroke: 'var(--mast-muted)', 'stroke-opacity': v === 1 ? 0.7 : 0.18, 'stroke-dasharray': v === 1 ? '3 3' : '' }, s);
+      el('text', { x: X(v), y: 10, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--mast-muted)' }, s, v.toFixed(1) + '×');
+    });
+    D.hero.forEach(function (h, i) {
+      var y = top + i * rh + 12, g = el('g', { tabindex: 0 }, s);
+      el('text', { x: 0, y: y - 2, 'font-size': 14, fill: 'var(--mast-text)', 'font-family': 'Inter, sans-serif', 'font-weight': 500 }, g, h.w);
+      el('text', { x: 0, y: y + 14, 'font-size': 11.5, fill: 'var(--mast-muted)', 'font-family': 'Inter, sans-serif' }, g, 'vs ' + h.base);
+      el('rect', { x: X(h.lo), y: y - 4, width: X(h.hi) - X(h.lo), height: 8, rx: 4, fill: 'var(--mast-accent)', opacity: 0.32 }, g);
+      el('circle', { cx: X(h.s), cy: y, r: 7, fill: 'var(--mast-accent)', stroke: 'var(--mast-1)', 'stroke-width': 2 }, g);
+      el('text', { x: X(h.hi) + 10, y: y + 5, 'font-size': 15, fill: 'var(--mast-text)', 'font-weight': 600 }, g, h.s.toFixed(2) + '×');
+      tip(g, h.w + ': ' + h.s.toFixed(2) + '× over ' + h.base + '; loads range ' + h.lo.toFixed(2) + '–' + h.hi.toFixed(2) + '×');
+    });
+  })();
+
+  /* What was timed: four illustrated panels. */
+  (function () {
+    var s = document.getElementById('spec-gpu');
+    for (var i = 0; i < 132; i++) el('rect', { x: 4 + (i % 12) * 11, y: 6 + Math.floor(i / 12) * 11, width: 9, height: 9, rx: 1.5, fill: css('--s1'), opacity: 0.8 }, s);
+    el('text', { x: 4, y: 144, 'font-size': 10.5, fill: css('--muted') }, s, '132 SMs');
+    var stats = [['141 GB', 'HBM3e'], ['4.8 TB/s', 'memory bandwidth'], ['50 MB', 'L2 cache'], ['989 TFLOP/s', 'dense BF16']];
+    stats.forEach(function (t, k) {
+      el('text', { x: 166, y: 20 + k * 36, 'font-size': 18, fill: css('--ink'), 'font-family': 'Newsreader, Georgia, serif' }, s, t[0]);
+      el('text', { x: 166, y: 34 + k * 36, 'font-size': 10.5, fill: css('--muted'), 'font-family': 'Inter, sans-serif' }, s, t[1]);
+    });
+  })();
+  (function () {
+    var s = document.getElementById('spec-share');
+    el('text', { x: 0, y: 11, 'font-size': 10.5, fill: css('--muted'), 'font-family': 'Inter, sans-serif' }, s, '16 query heads → 2 KV heads');
+    for (var q = 0; q < 16; q++) el('rect', { x: q * 10 + (q >= 8 ? 6 : 0), y: 18, width: 8, height: 8, rx: 1.5, fill: css('--s1'), opacity: 0.55 }, s);
+    [0, 1].forEach(function (k) {
+      var x0 = k * 86, cx = x0 + 39;
+      el('path', { d: 'M' + (x0 + 4) + ' 28 L' + cx + ' 40 M' + (x0 + 74) + ' 28 L' + cx + ' 40', stroke: css('--rule-strong'), fill: 'none' }, s);
+      el('rect', { x: cx - 12, y: 40, width: 24, height: 12, rx: 2, fill: css('--s1') }, s);
+    });
+    el('text', { x: 0, y: 68, 'font-size': 10.5, fill: css('--muted'), 'font-family': 'Inter, sans-serif' }, s, '32 local experts (purple) of 256, NVFP4');
+    for (var e = 0; e < 256; e++) el('rect', { x: (e % 32) * 5.2, y: 74 + Math.floor(e / 32) * 5.2, width: 4.2, height: 4.2, fill: e < 32 ? css('--s4') : css('--base-soft') }, s);
+    el('text', { x: 186, y: 11, 'font-size': 10.5, fill: css('--muted'), 'font-family': 'Inter, sans-serif' }, s, 'weights to scale');
+    var sc = 150 / 8192;
+    el('rect', { x: 186, y: 18, width: 8192 * sc, height: 4096 * sc, fill: css('--s3'), opacity: 0.85 }, s);
+    el('text', { x: 194, y: 40, 'font-size': 11, fill: css('--on-mark'), 'font-family': 'Inter, sans-serif', 'font-weight': 600 }, s, 'pooler');
+    el('text', { x: 194, y: 55, 'font-size': 10.5, fill: css('--on-mark'), 'font-family': 'Inter, sans-serif' }, s, '4,096 × 8,192, BF16');
+    el('rect', { x: 186, y: 112, width: 8192 * sc, height: Math.max(2, 256 * sc), fill: css('--base') }, s);
+    el('text', { x: 186, y: 130, 'font-size': 11, fill: css('--ink'), 'font-family': 'Inter, sans-serif', 'font-weight': 600 }, s, 'router');
+    el('text', { x: 186, y: 144, 'font-size': 10.5, fill: css('--muted'), 'font-family': 'Inter, sans-serif' }, s, '256 × 8,192, FP32');
+  })();
+  (function () {
+    var s = document.getElementById('spec-clock'); arrowDefs(s);
+    var seq = [['flush', '--base-soft'], ['SGLang', '--base'], ['flush', '--base-soft'], ['mine', '--mark'], ['flush', '--base-soft'], ['mine', '--mark'], ['flush', '--base-soft'], ['SGLang', '--base']];
+    var x = 0;
+    seq.forEach(function (b, i) {
+      var w = b[0] === 'flush' ? 30 : 48;
+      el('rect', { x: x, y: 14, width: w - 3, height: 28, rx: 3, fill: css(b[1]) }, s);
+      el('text', { x: x + (w - 3) / 2, y: 32, 'text-anchor': 'middle', 'font-size': 9.5, fill: b[0] === 'flush' ? css('--muted') : css('--on-mark') }, s, b[0]);
+      x += w;
+    });
+    el('text', { x: 0, y: 58, 'font-size': 10.5, fill: css('--muted') }, s, 'pair 1: SGLang first');
+    el('text', { x: 156, y: 58, 'font-size': 10.5, fill: css('--muted') }, s, 'pair 2: order swapped');
+    el('text', { x: 0, y: 84, 'font-size': 11, fill: css('--ink'), 'font-family': 'Inter, sans-serif' }, s, 'flush = read a buffer larger than the 50 MB L2');
+    el('text', { x: 0, y: 102, 'font-size': 11, fill: css('--ink'), 'font-family': 'Inter, sans-serif' }, s, 'replay = one CUDA graph of one call, fresh inputs');
+    el('text', { x: 0, y: 120, 'font-size': 11, fill: css('--ink'), 'font-family': 'Inter, sans-serif' }, s, '~4 µs replay cost subtracted from both sides');
+    el('text', { x: 0, y: 140, 'font-size': 11, fill: css('--mark'), 'font-family': 'Inter, sans-serif', 'font-weight': 600 }, s, '× 60 repetitions → median of SGLang / mine');
+  })();
+  (function () {
+    var s = document.getElementById('spec-serve');
+    for (var g = 0; g < 8; g++) {
+      el('rect', { x: g * 42, y: 4, width: 36, height: 22, rx: 3, fill: css('--surface'), stroke: css('--rule-strong') }, s);
+      el('text', { x: g * 42 + 18, y: 19, 'text-anchor': 'middle', 'font-size': 9.5, fill: css('--muted') }, s, 'GPU ' + g);
+    }
+    var first = 74160, later = 753, out = 220, n = 12, total = first + n * (later + out), W = 336, x = 0;
+    function seg(len, color, op) { var w = W * len / total; el('rect', { x: x, y: 52, width: Math.max(w, 0.8), height: 26, fill: color, opacity: op }, s); x += w; }
+    seg(first, css('--s1'), 0.85);
+    for (var t = 0; t < n; t++) { seg(later, css('--s1'), 0.45); seg(out, css('--mark'), 0.9); }
+    el('text', { x: 0, y: 46, 'font-size': 10.5, fill: css('--muted') }, s, 'tokens in one 13-turn conversation');
+    el('text', { x: 0, y: 96, 'font-size': 11, fill: css('--ink') }, s, 'first prompt: 74,160 tokens');
+    el('text', { x: W, y: 96, 'text-anchor': 'end', 'font-size': 11, fill: css('--ink') }, s, '12 later turns');
+    el('rect', { x: 0, y: 112, width: 10, height: 10, fill: css('--s1'), opacity: 0.6 }, s);
+    el('text', { x: 15, y: 121, 'font-size': 10.5, fill: css('--muted') }, s, 'prompt (753 new per later turn)');
+    el('rect', { x: 0, y: 130, width: 10, height: 10, fill: css('--mark') }, s);
+    el('text', { x: 15, y: 139, 'font-size': 10.5, fill: css('--muted') }, s, 'output (about 220 per turn)');
+  })();
+
+  var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function tween(dur, fn, done) {
+    if (REDUCED) { fn(1); if (done) done(); return; }
+    var t0 = null;
+    function f(t) { if (t0 === null) t0 = t; var k = Math.min(1, (t - t0) / dur); fn(1 - Math.pow(1 - k, 3)); if (k < 1) requestAnimationFrame(f); else if (done) done(); }
+    requestAnimationFrame(f);
+  }
+  function us(v) { return v >= 1000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(1); }
+  function users(c) { return c + (c === 1 ? ' user' : ' users'); }
+  function txt(s, x, y, t, o) {
+    o = o || {};
+    var a = { x: x, y: y, 'font-size': o.size || 11, fill: o.fill || css('--ink') };
+    if (o.anchor) a['text-anchor'] = o.anchor;
+    if (o.sans) a['font-family'] = 'Inter, sans-serif';
+    if (o.weight) a['font-weight'] = o.weight;
+    return el('text', a, s, t);
+  }
+
+  /* Figure 1: microseconds saved by each change, plus stock vs final. */
+  (function () {
+    var s = document.getElementById('layer-delta'), Ly = D.layer;
+    var L = 250, R = 600, max = 10;
+    function X(v) { return L + (R - L) * v / max; }
+    var rows = [
+      { g: 'Faster projection kernels', m: 'GPU-busy time (profiled)', a: Ly.d12.busy, b: Ly.d13.busy, prof: true },
+      { m: 'summed kernel duration (profiled)', a: Ly.d12.ksum, b: Ly.d13.ksum, prof: true },
+      { m: 'elapsed layer time', a: Ly.d12.elapsed, b: Ly.d13.elapsed, key: true },
+      { g: 'Routing and scheduling changes', m: 'elapsed layer time', a: Ly.d37.elapsed, b: Ly.d53.elapsed, key: true }
+    ];
+    var y = 6;
+    rows.forEach(function (r) {
+      if (r.g) { y += 14; txt(s, 0, y, r.g, { size: 12.5, sans: true, weight: 600 }); y += 10; }
+      var d = r.a - r.b, g = el('g', { tabindex: 0 }, s);
+      txt(g, 12, y + 15, r.m, { size: 11.5, sans: true, fill: css('--muted') });
+      var rect = el('rect', { x: L, y: y + 3, width: 0, height: 16, rx: 3, fill: r.prof ? css('--base-soft') : css('--mark'), stroke: r.prof ? css('--base') : 'none', 'stroke-dasharray': r.prof ? '3 2' : '' }, g);
+      var lab = txt(g, L + 8, y + 15, '', { size: 12, fill: r.prof ? css('--ink') : css('--mark'), weight: r.prof ? 400 : 600 });
+      tween(700, function (k) { rect.setAttribute('width', Math.max(1, (X(d) - L) * k)); lab.setAttribute('x', L + (X(d) - L) * k + 8); lab.textContent = '−' + (d * k).toFixed(1) + ' µs'; });
+      tip(g, (r.g || 'Faster projection kernels') + ', ' + r.m + ': ' + r.a.toFixed(2) + ' → ' + r.b.toFixed(2) + ' µs');
+      r.gname = r.g; y += 24;
+    });
+    [0, 2, 4, 6, 8, 10].forEach(function (v) {
+      el('line', { x1: X(v), x2: X(v), y1: 26, y2: y + 4, stroke: css('--rule') }, s).parentNode.insertBefore(s.lastChild, s.firstChild);
+      txt(s, X(v), y + 18, v + ' µs', { size: 10.5, fill: css('--muted'), anchor: 'middle' });
+    });
+    txt(s, L, y + 34, 'microseconds saved', { size: 10.5, fill: css('--muted') });
+    y += 58;
+    txt(s, 0, y, 'Stock layer against the final layer', { size: 12.5, sans: true, weight: 600 });
+    var L2 = 250, R2 = 600, m2 = 180;
+    function X2(v) { return L2 + (R2 - L2) * v / m2; }
+    [['stock SGLang layer', Ly.d53.stock, css('--base')], ['my final layer', Ly.d53.elapsed, css('--mark')]].forEach(function (r, i) {
+      var yy = y + 10 + i * 24;
+      txt(s, 12, yy + 13, r[0], { size: 11.5, sans: true, fill: css('--muted') });
+      var rect = el('rect', { x: L2, y: yy + 1, width: 0, height: 16, rx: 3, fill: r[2] }, s);
+      tween(900, function (k) { rect.setAttribute('width', (X2(r[1]) - L2) * k); });
+      txt(s, X2(r[1]) + 8, yy + 13, r[1].toFixed(1) + ' µs', { size: 12 });
+    });
+    txt(s, X2(Ly.d53.elapsed) + 80, y + 47, (Ly.d53.stock / Ly.d53.elapsed).toFixed(2) + '× faster', { size: 13, fill: css('--mark'), weight: 600 });
+    var h = '<thead><tr><th>Comparison</th><th>Metric</th><th class="num">Before</th><th class="num">After</th></tr></thead><tbody>', gname = '';
+    rows.forEach(function (r) { if (r.g) gname = r.g; h += '<tr><td>' + gname + '</td><td>' + r.m + (r.prof ? '' : ' (median)') + '</td><td class="num">' + r.a.toFixed(2) + ' µs</td><td class="num">' + r.b.toFixed(2) + ' µs</td></tr>'; });
+    h += '<tr><td>Stock layer against the final layer</td><td>elapsed layer time (median)</td><td class="num">' + Ly.d53.stock.toFixed(2) + ' µs</td><td class="num">' + Ly.d53.elapsed.toFixed(2) + ' µs</td></tr>';
+    document.getElementById('layer-table').innerHTML = h + '</tbody>';
+  })();
+
+  /* Serving: which change went into which run, with each run's result. */
+  (function () {
+    function pt(series, c) { return D.serve.filter(function (q) { return q.series === series && q.conc === c; })[0]; }
+    var cols = [
+      ['KV pool', 'scored, 4 loads', D.kvscore], ['+ MoE kernel', 'check, 1 user', pt('moe', 1).v], ['+ MoE kernel', 'check, 32 users', pt('moe', 32).v],
+      ['+ row split', 'check, 32 users', pt('rows', 32).v], ['All four', 'check, 16 users', pt('stack', 16).v, true]
+    ];
+    var rows = [
+      ['KV pool', 'Sliding-window share of the KV budget set to 0.1 instead of SGLang’s generic 0.8', [1, 1, 1, 1, 1]],
+      ['MoE kernel', 'My NVFP4 expert kernel in place of Marlin', [0, 1, 1, 0, 1]],
+      ['Prefill row split', 'From 512 tokens, each GPU projects its eighth of the rows, then all-gathers; a reduce-scatter replaces the all-reduce', [0, 0, 0, 1, 1]],
+      ['Decode column split', 'SGLang’s column-split projections, enabled on Hopper at decode sizes', [0, 0, 0, 0, 1]]
+    ];
+    var h = '<thead><tr><th scope="col" style="text-align:left">Change</th>' + cols.map(function (c) { return '<th scope="col"' + (c[3] ? ' class="final"' : '') + '><span class="kind">' + c[0] + '</span>' + c[1] + '</th>'; }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+      h += '<tr><th scope="row">' + r[0] + '<small>' + r[1] + '</small></th>' + r[2].map(function (on, j) { return '<td' + (cols[j][3] ? ' class="final"' : '') + '>' + (on ? '<span class="dot" role="img" aria-label="included"></span>' : '<span class="no" role="img" aria-label="not included"></span>') + '</td>'; }).join('') + '</tr>';
+    });
+    h += '</tbody><tfoot><tr><th scope="row">Result vs stock</th>' + cols.map(function (c) { return '<td class="up' + (c[3] ? ' final' : '') + '">' + c[2].toFixed(3) + '×</td>'; }).join('') + '</tr></tfoot>';
+    var pl = [1, 4, 16, 32].map(function (c) { var p = pt('kv', c); return '<span class="pl"><span class="pl-v">' + p.v.toFixed(3) + '</span><span class="pl-b" style="height:' + Math.max(2, (p.v - 1) / 0.07 * 26) + 'px"></span><span class="pl-u">' + c + '</span></span>'; }).join('');
+    h = h.replace('</tfoot>', '<tr class="byload"><th scope="row">Scored run by load (users)</th><td colspan="1"><span class="plw" role="img" aria-label="Scored KV-pool run by load">' + pl + '</span></td>' + cols.slice(1).map(function (c) { return '<td' + (c[3] ? ' class="final"' : '') + '></td>'; }).join('') + '</tr></tfoot>');
+    document.getElementById('patch-matrix').innerHTML = h;
+  })();
+
+  /* Figure 18: TTFT p90, stock vs mine, two log-scale panels. */
+  (function () {
+    var s = document.getElementById('ttft-dumbbell');
+    var names = ['KV pool + MoE kernel', 'All four stacked', 'KV pool + MoE kernel', 'KV pool + row split'];
+    function fmt(v) { return v < 10 ? v.toFixed(2) : v.toFixed(1); }
+    function panel(x0, x1, lo, hi, ticks, title, key) {
+      function X(v) { return x0 + (x1 - x0) * (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)); }
+      txt(s, x0, 14, title, { size: 12, sans: true, weight: 600 });
+      ticks.forEach(function (v) {
+        el('line', { x1: X(v), x2: X(v), y1: 26, y2: 220, stroke: css('--rule') }, s);
+        txt(s, X(v), 238, v + ' s', { size: 11, fill: css('--muted'), anchor: 'middle' });
+      });
+      D.ttft.forEach(function (r, i) {
+        var y = 48 + i * 46, a = r[key[0]], b = r[key[1]], g = el('g', { tabindex: 0 }, s);
+        el('line', { x1: X(b), x2: X(a), y1: y, y2: y, stroke: css('--base'), 'stroke-width': 2.5 }, g);
+        el('circle', { cx: X(a), cy: y, r: 6, fill: css('--surface'), stroke: css('--base'), 'stroke-width': 2 }, g);
+        el('circle', { cx: X(b), cy: y, r: 6.5, fill: css('--mark'), stroke: css('--surface'), 'stroke-width': 2 }, g);
+        txt(g, X(a) + 11, y + 4, fmt(a), { size: 10.5, fill: css('--muted') });
+        txt(g, X(b) - 11, y + 4, fmt(b), { size: 10.5, anchor: 'end' });
+        tip(g, names[i] + ', ' + users(r.conc) + ', ' + title + ': stock ' + fmt(a) + ' s → mine ' + fmt(b) + ' s');
+      });
+    }
+    D.ttft.forEach(function (r, i) {
+      txt(s, 0, 46 + i * 46, names[i], { size: 11.5, sans: true });
+      txt(s, 0, 61 + i * 46, users(r.conc), { size: 10.5, sans: true, fill: css('--muted') });
+    });
+    panel(215, 445, 4, 300, [5, 20, 100], 'First turn', ['sf', 'of']);
+    panel(485, 675, 0.1, 5, [0.1, 0.5, 2], 'Later turns', ['sl', 'ol']);
+  })();
+
+  /* Figure 2 (top): fork/join schematic of the final layer, with the routing changes numbered */
+  (function () {
+    var s = document.getElementById('deps'); arrowDefs(s);
+    var w = 70, h = 40, gap = 18, y1 = 40, y2 = 150;
+    function mark(x, y, n) {
+      var g = el('g', {}, s);
+      el('circle', { cx: x, cy: y, r: 8, fill: css('--surface'), stroke: css('--mark'), 'stroke-width': 1.5 }, g);
+      txt(g, x, y + 3.5, n, { size: 10, fill: css('--mark'), anchor: 'middle' });
+    }
+    function X(i) { return 14 + i * (w + gap); }
+    var main = [['qkv', '--s3'], ['attention', '--s1'], ['o-proj', '--s3'], ['norm', '--base'], ['pooler', '--s3'], ['expert', '--s4', 'GEMM'], ['combine', '--s4'], ['unpooler', '--s3']];
+    main.forEach(function (k, i) {
+      box(s, X(i), y1, w, h, k[0], css(k[1]), k[2]);
+      if (i) arrow(s, 'M' + (X(i) - gap + 2) + ' ' + (y1 + h / 2) + ' L' + (X(i) - 2) + ' ' + (y1 + h / 2));
+    });
+    mark(X(1) + w / 2, y1 - 14, '2');
+    [['router', 3], ['top-8', 4], ['tables', 5]].forEach(function (k, i) {
+      box(s, X(k[1]), y2, w, h, k[0], css('--base'));
+      if (i) arrow(s, 'M' + (X(k[1]) - gap + 2) + ' ' + (y2 + h / 2) + ' L' + (X(k[1]) - 2) + ' ' + (y2 + h / 2));
+    });
+    arrow(s, 'M' + (X(3) + w / 2) + ' ' + (y1 + h + 2) + ' L' + (X(3) + w / 2) + ' ' + (y2 - 2));
+    txt(s, X(3) - 8, y1 + h + 30, 'fork: normalized activation', { size: 10.5, fill: css('--muted'), anchor: 'end' });
+    txt(s, X(3) - 8, y1 + h + 44, 'to both streams', { size: 10.5, fill: css('--muted'), anchor: 'end' });
+    arrow(s, 'M' + (X(5) + w / 2) + ' ' + (y2 - 2) + ' L' + (X(5) + w / 2) + ' ' + (y1 + h + 3), true);
+    txt(s, X(5) + w / 2 + 8, y1 + h + 36, 'routes ready', { size: 10.5, fill: css('--mark') });
+    txt(s, X(5) + w / 2 + 8, y1 + h + 50, '(cross-stream event)', { size: 10.5, fill: css('--mark') });
+    txt(s, X(5) + w / 2, y1 - 8, 'join: GEMM waits for both', { size: 10.5, anchor: 'middle' });
+    el('path', { d: 'M' + (X(3) + w / 2) + ' ' + (y2 + h + 8) + ' L' + (X(3) + w / 2) + ' ' + (y2 + h + 14) + ' L' + (X(5) + w / 2) + ' ' + (y2 + h + 14) + ' L' + (X(5) + w / 2) + ' ' + (y2 + h + 8), fill: 'none', stroke: css('--mark'), 'stroke-width': 1.2 }, s);
+    mark(X(4) + w / 2, y2 + h + 14, '1');
+    mark(X(3) - 14, y2 + h / 2, '4'); mark(X(4) + w / 2, y2 - 12, '3');
+    txt(s, 14, 226, '1 PDL chaining along the routing branch · 2 router memset moved under attention', { size: 11, sans: true });
+    txt(s, 14, 243, '3 top-8 with one warp per token · 4 router K split retuned', { size: 11, sans: true });
+  })();
+
+  /* Figure 2 (bottom): the join, as an illustration (lengths are not measured). */
+  (function () {
+    var s = document.getElementById('join'), status = document.getElementById('join-status');
+    var X0 = 110, yP = 30, yR = 78, bh = 26;
+    var STEPS = [
+      { p: 210, r: 270, say: 'Both branches start after the norm. The expert GEMM starts when the later branch finishes; by my inference that was routing, so the pooler waits.' },
+      { p: 140, r: 270, say: 'A faster pooler finishes earlier and only waits longer. Busy time drops, the join stays put, and the layer barely speeds up.' },
+      { p: 140, r: 200, say: 'Shortening the routing branch moves the join itself, and elapsed time falls with it.' }
+    ];
+    txt(s, 0, yP + 17, 'main stream', { size: 10.5, fill: css('--muted') });
+    txt(s, 0, yR + 17, 'second stream', { size: 10.5, fill: css('--muted') });
+    var pool = el('rect', { x: X0, y: yP, height: bh, rx: 3, fill: css('--s3') }, s);
+    var poolT = txt(s, X0 + 8, yP + 17, 'pooler', { size: 11, fill: css('--on-mark') });
+    var route = el('rect', { x: X0, y: yR, height: bh, rx: 3, fill: css('--base') }, s);
+    var routeT = txt(s, X0 + 8, yR + 17, 'router → top-8 → tables', { size: 11, fill: css('--on-mark') });
+    var waitP = el('rect', { y: yP, height: bh, rx: 3, fill: 'none', stroke: css('--mark'), 'stroke-dasharray': '3 3' }, s);
+    var waitT = txt(s, 0, yP + 17, 'waits', { size: 10.5, fill: css('--mark'), anchor: 'middle' });
+    var joinL = el('line', { y1: yP - 10, y2: yR + bh + 8, stroke: css('--mark'), 'stroke-width': 2 }, s);
+    var gemm = el('rect', { y: yP + (yR - yP) / 2 - 2, width: 120, height: bh + 4, rx: 3, fill: css('--s4') }, s);
+    var gemmT = txt(s, 0, yP + (yR - yP) / 2 + 16, 'expert GEMM', { size: 11, fill: css('--on-mark'), anchor: 'middle' });
+    el('line', { x1: X0, x2: X0, y1: yP - 10, y2: yR + bh + 8, stroke: css('--rule-strong'), 'stroke-width': 1.5 }, s);
+    var brk = el('path', { fill: 'none', stroke: css('--ink'), 'stroke-width': 1.2 }, s);
+    var brkT = txt(s, 0, 150, 'elapsed', { size: 10.5, anchor: 'middle' });
+    var ghost = el('line', { y1: yP - 10, y2: yR + bh + 8, stroke: css('--muted'), 'stroke-width': 1, 'stroke-dasharray': '2 3' }, s);
+    var ghostT = txt(s, 0, yP - 14, 'join before', { size: 10, fill: css('--muted'), anchor: 'middle' });
+    var savedT = txt(s, 0, 162, 'elapsed time saved', { size: 10.5, fill: css('--mark'), anchor: 'middle', weight: 600 });
+    var savedP = el('path', { fill: 'none', stroke: css('--mark'), 'stroke-width': 1.5 }, s);
+    var cur = { p: STEPS[0].p, r: STEPS[0].r };
+    function draw(p, r) {
+      var j = X0 + Math.max(p, r), e = j + 128;
+      pool.setAttribute('width', p); route.setAttribute('width', r);
+      var early = p < r ? { y: yP, end: X0 + p } : { y: yR, end: X0 + r };
+      waitP.setAttribute('y', early.y); waitP.setAttribute('x', early.end + 2); waitP.setAttribute('width', Math.max(0, j - early.end - 4));
+      waitT.setAttribute('x', (early.end + j) / 2); waitT.setAttribute('y', early.y + 17);
+      waitT.style.opacity = j - early.end > 36 ? 1 : 0;
+      joinL.setAttribute('x1', j); joinL.setAttribute('x2', j);
+      gemm.setAttribute('x', j + 4); gemmT.setAttribute('x', j + 64);
+      brk.setAttribute('d', 'M' + X0 + ' 132 L' + X0 + ' 138 L' + (j + 124) + ' 138 L' + (j + 124) + ' 132');
+      brkT.setAttribute('x', (X0 + j + 124) / 2);
+      if (typeof oldEnd !== 'undefined') { savedP.setAttribute('d', 'M' + (j + 124) + ' 146 L' + oldEnd + ' 146'); savedT.setAttribute('x', (j + 124 + oldEnd) / 2); }
+    }
+    ghost.setAttribute('x1', X0 + STEPS[0].r); ghost.setAttribute('x2', X0 + STEPS[0].r);
+    ghostT.setAttribute('x', X0 + STEPS[0].r);
+    var oldEnd = X0 + STEPS[0].r + 124;
+    function go(i) {
+      var t = STEPS[+i], a = { p: cur.p, r: cur.r };
+      status.textContent = t.say;
+      [ghost, ghostT, savedT, savedP].forEach(function (n) { n.style.opacity = +i === 2 ? 1 : 0; });
+      tween(650, function (k) { cur.p = a.p + (t.p - a.p) * k; cur.r = a.r + (t.r - a.r) * k; draw(cur.p, cur.r); });
+    }
+    draw(cur.p, cur.r);
+    go(seg('join', go));
+  })();
+
+  /* Figure 3: the four cp.async instructions (cc = 0..3) of a 16-token tile, before and after side by side.
+     Before: tr = lane >> 1, chunk = (lane & 1) * 4 + cc.   After: tr = cc * 4 + (lane >> 3), chunk = lane & 7.
+     A row is 128 B = 8 chunks of 16 B = 4 sectors of 32 B. Color = instruction. */
+  function lanesOf(mode, cc) {
+    var m = [];
+    for (var l = 0; l < 32; l++) m.push(mode === 'before' ? { lane: l, row: l >> 1, chunk: (l & 1) * 4 + cc } : { lane: l, row: cc * 4 + (l >> 3), chunk: l & 7 });
+    return m;
+  }
+  var IC = [css('--s1'), css('--s3'), css('--s4'), css('--mark')];
+  var gState = { k: 1 }, gTimer = null;
+  function drawGather() {
+    var s = document.getElementById('gather'); clear(s);
+    var k = gState.k, cw = 38, rh = 17, top = 84;
+    [['before', 0, 'Before: two lanes per row', '32 lanes reach 16 rows, 2 lanes each'], ['after', 372, 'After: eight lanes per row', '32 lanes reach 4 rows, 8 lanes each']].forEach(function (P) {
+      var mode = P[0], x0 = P[1], gx = x0 + 28, owner = {}, cnt = {}, curSec = {}, curRows = {};
+      for (var c = 0; c < k; c++) {
+        var sec = {};
+        lanesOf(mode, c).forEach(function (m) { owner[m.row + ':' + m.chunk] = c; sec[m.row + ':' + (m.chunk >> 1)] = 1; });
+        Object.keys(sec).forEach(function (q) { cnt[q] = (cnt[q] || 0) + 1; });
+      }
+      lanesOf(mode, k - 1).forEach(function (m) { curSec[m.row + ':' + (m.chunk >> 1)] = 1; curRows[m.row] = 1; });
+      txt(s, x0, 14, P[2], { size: 12.5, sans: true, weight: 600 });
+      lanesOf(mode, k - 1).forEach(function (m) {
+        var g = el('g', {}, s);
+        el('rect', { x: gx + m.lane * 9.5, y: 24, width: 8.5, height: 12, rx: 1.5, fill: IC[k - 1], opacity: m.row % 2 ? 0.55 : 1 }, g);
+        tip(g, 'lane ' + m.lane + ' → row ' + m.row + ', bytes ' + m.chunk * 16 + '–' + (m.chunk * 16 + 15));
+      });
+      txt(s, gx, 50, P[3], { size: 10.5, sans: true, fill: css('--muted') });
+      for (var q = 0; q < 4; q++) {
+        var mx = 0; for (var rr = 0; rr < 16; rr++) mx = Math.max(mx, cnt[rr + ':' + q] || 0);
+        txt(s, gx + q * 2 * cw + cw, 74, 's' + q + (mx > 1 ? ' ×' + mx : ''), { size: 10, anchor: 'middle', fill: mx > 1 ? css('--mark') : css('--muted'), weight: mx > 1 ? 600 : 400 });
+      }
+      for (var r = 0; r < 16; r++) {
+        var y = top + r * rh;
+        txt(s, x0, y + 11, 't' + r, { size: 10, fill: curRows[r] ? css('--ink') : css('--muted') });
+        for (var ch = 0; ch < 8; ch++) {
+          var o = owner[r + ':' + ch];
+          el('rect', { x: gx + ch * cw, y: y, width: cw - 2, height: rh - 4, rx: 1.5, fill: o === undefined ? css('--base-soft') : IC[o], opacity: o === undefined ? 1 : (o === k - 1 ? 1 : 0.3) }, s);
+        }
+        for (var q2 = 0; q2 < 4; q2++) if (curSec[r + ':' + q2]) el('rect', { x: gx + q2 * 2 * cw - 1, y: y - 1, width: 2 * cw, height: rh - 2, fill: 'none', stroke: css('--ink'), 'stroke-width': 1.2 }, s);
+      }
+      var reqs = 0, distinct = Object.keys(cnt).length; Object.keys(cnt).forEach(function (q3) { reqs += cnt[q3]; });
+      var by = top + 16 * rh + 16;
+      txt(s, x0, by, 'This instruction: ' + Object.keys(curRows).length + ' rows, ' + Object.keys(curSec).length + ' sectors', { size: 11.5, sans: true });
+      txt(s, x0, by + 18, 'So far: ' + reqs + ' sector requests for ' + distinct + ' sectors', { size: 11.5, sans: true, weight: 600, fill: reqs > distinct ? css('--mark') : css('--ink') });
+    });
+    for (var i = 0; i < 4; i++) {
+      var lx = 0 + i * 118, on = i < k;
+      el('rect', { x: lx, y: 400, width: 14, height: 12, rx: 2, fill: IC[i], opacity: on ? (i === k - 1 ? 1 : 0.3) : 0.12 }, s);
+      txt(s, lx + 20, 410, 'instruction ' + i, { size: 11, sans: true, weight: i === k - 1 ? 600 : 400, fill: on ? css('--ink') : css('--muted') });
+    }
+    document.getElementById('gather-cap').textContent = 'Both panels step through the same four instructions that copy one 16-token tile of K rows; the mapping comes from the addressing code of the two versions, and V rows follow the same pattern. Outlined: sectors the current instruction touches; faded: chunks copied by earlier instructions. On batch-32 full decode the call took ' + D.gather.before.toFixed(1) + ' µs before the remap and ' + D.gather.after.toFixed(1) + ' µs after, with the page-id and prefetch changes included. The diagram shows addresses, not DRAM transactions.';
+  }
+  (function () {
+    var play = document.getElementById('g-play'), step = document.getElementById('g-step');
+    function stop() { if (gTimer) { clearInterval(gTimer); gTimer = null; } play.textContent = 'Play'; play.classList.remove('btn2--on'); }
+    function next() { gState.k = gState.k % 4 + 1; drawGather(); }
+    step.addEventListener('click', function () { stop(); next(); });
+    play.addEventListener('click', function () {
+      if (gTimer) { stop(); return; }
+      play.textContent = 'Pause'; play.classList.add('btn2--on');
+      gState.k = 0; next();
+      gTimer = setInterval(function () { if (gState.k >= 4) { stop(); return; } next(); }, 1300);
+    });
+    drawGather();
+  })();
+
+  /* Figure 4: overview of all twelve shapes, plus the explorer for one. */
+  var st = { mode: 'decode', batch: '32', layer: 'full' };
+  function f(v) { return v < 1 ? v.toFixed(2) : v.toFixed(1); }
+  function rowOf() { return D.attn.filter(function (r) { return r.mode === st.mode && String(r.batch) === st.batch && r.layer === st.layer; })[0]; }
+  function setSeg(group, v) { document.querySelectorAll('.seg[data-group="' + group + '"] button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === String(v) ? 'true' : 'false'); }); }
+  function drawOverview() {
+    var s = document.getElementById('attn-overview'); clear(s);
+    var L = 150, R = 520, lo = 1, hi = 3.2, y = 8;
+    function X(v) { return L + (R - L) * (v - lo) / (hi - lo); }
+    var axisY = 8 + 2 * 24 + 12 * 21 + 8;
+    [1, 1.5, 2, 2.5, 3].forEach(function (v) {
+      el('line', { x1: X(v), x2: X(v), y1: 14, y2: axisY - 4, stroke: v === 1 ? css('--base') : css('--rule'), 'stroke-dasharray': v === 1 ? '3 3' : '' }, s);
+      txt(s, X(v), axisY + 10, v.toFixed(1) + '×', { size: 10.5, fill: css('--muted'), anchor: 'middle' });
+    });
+    txt(s, 716, axisY + 10, 'FlashAttention-3 → mine', { size: 10.5, fill: css('--muted'), anchor: 'end' });
+    ['decode', 'verify'].forEach(function (m) {
+      txt(s, 0, y + 16, m === 'decode' ? 'Decode, 1 new token' : 'Verify, 8 draft tokens', { size: 12, sans: true, weight: 600 });
+      y += 24;
+      D.attn.filter(function (r) { return r.mode === m; }).forEach(function (r) {
+        var sel = r.mode === st.mode && String(r.batch) === st.batch && r.layer === st.layer, sp = r.fa3 / r.ours;
+        var g = el('g', { tabindex: 0, 'class': 'ov-row', role: 'button', 'aria-label': r.mode + ', batch ' + r.batch + ', ' + r.layer + ': ' + sp.toFixed(2) + '×' }, s);
+        el('rect', { 'class': 'hit', x: 0, y: y, width: 720, height: 20, rx: 3, fill: sel ? css('--mark-soft') : 'transparent' }, g);
+        txt(g, 12, y + 14, 'batch ' + r.batch + ' · ' + r.layer, { size: 11.5, sans: true, fill: sel ? css('--ink') : css('--muted'), weight: sel ? 600 : 400 });
+        el('rect', { x: X(1), y: y + 5, width: X(sp) - X(1), height: 10, rx: 2, fill: css('--mark'), opacity: sel ? 1 : 0.7 }, g);
+        txt(g, X(sp) + 6, y + 14, sp.toFixed(2) + '×', { size: 11, weight: 600 });
+        txt(g, 716, y + 14, us(r.fa3) + ' → ' + us(r.ours) + ' µs', { size: 11, fill: css('--muted'), anchor: 'end' });
+        function pick() { st = { mode: r.mode, batch: String(r.batch), layer: r.layer }; setSeg('mode', r.mode); setSeg('batch', r.batch); setSeg('layer', r.layer); drawAttn(); }
+        g.addEventListener('click', pick);
+        g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+        y += 21;
+      });
+    });
+  }
+  function drawAttn() {
+    var d = rowOf(), tb = d.mb / d.ours, floor = d.mb / 4.8;
+    document.getElementById('attn-stats').innerHTML =
+      '<div><dt>FlashAttention-3</dt><dd>' + d.fa3.toFixed(1) + ' µs</dd></div>' +
+      '<div><dt>This kernel</dt><dd class="hi">' + d.ours.toFixed(1) + ' µs</dd></div>' +
+      '<div><dt>Speedup</dt><dd class="hi">' + (d.fa3 / d.ours).toFixed(2) + '×</dd></div>' +
+      '<div><dt>Est. KV payload</dt><dd class="est">' + f(d.mb) + ' MB</dd></div>' +
+      '<div><dt>Est. bandwidth</dt><dd class="est">' + tb.toFixed(2) + ' TB/s</dd></div>' +
+      '<div><dt>Est. HBM floor</dt><dd class="est">' + f(floor) + ' µs</dd></div>';
+    var pay = st.layer === 'full' ? st.batch + ' × nominal 80,000 cached tokens × 256 B' : (st.mode === 'verify' ? st.batch + ' × 2,055 positions (the union of the 8 overlapping causal windows) × 256 B' : st.batch + ' × 2,048 window tokens × 256 B');
+    var note = st.layer === 'full' ? 'At this size the call is bandwidth-bound.' : 'Too few bytes for bandwidth to matter: launches, barriers and the merge set the time.';
+    var extra = (st.mode === 'decode' && st.batch === '32' && st.layer === 'full') ? ' The split-attention kernel alone ran ' + D.attn_split_b32.toFixed(1) + ' µs in the judge’s profile of this run: ' + (655.36 / D.attn_split_b32).toFixed(2) + ' TB/s = 655.36 MB / ' + D.attn_split_b32.toFixed(1) + ' µs, excluding the merge and prologue kernels.' : '';
+    document.getElementById('attn-cap').textContent = 'Select a row or use the buttons. Est. KV payload = ' + pay + ', excluding page-table reads, cache writes and merge traffic. Est. bandwidth = payload / measured call time; floor = payload / 4.8 TB/s. ' + note + extra;
+    drawOverview();
+  }
+  ['mode', 'batch', 'layer'].forEach(function (g) { seg(g, function (v) { st[g] = v; drawAttn(); }); });
+  drawAttn();
+  (function () {
+    var t = document.getElementById('attn-table');
+    var h = '<thead><tr><th>Mode</th><th class="num">Batch</th><th>Layer</th><th class="num">FA3 µs</th><th class="num">This kernel µs</th><th class="num">Speedup</th><th class="num">Est. payload MB</th><th class="num">Est. TB/s</th><th class="num">Est. floor µs</th></tr></thead><tbody>';
+    D.attn.forEach(function (r) {
+      h += '<tr><td>' + r.mode + '</td><td class="num">' + r.batch + '</td><td>' + r.layer + '</td><td class="num">' + r.fa3.toFixed(2) + '</td><td class="num">' + r.ours.toFixed(2) + '</td><td class="num">' + (r.fa3 / r.ours).toFixed(2) + '×</td><td class="num est">' + f(r.mb) + '</td><td class="num est">' + (r.mb / r.ours).toFixed(2) + '</td><td class="num est">' + f(r.mb / 4.8) + '</td></tr>';
+    });
+    t.innerHTML = h + '</tbody>';
+  })();
+
+  /* Figure 5: split-KV schematic. Three requests (5, 9 and 2 units of keys) laid end to end, eight equal block shares. */
+  (function () {
+    var s = document.getElementById('splitkv'); arrowDefs(s);
+    var lens = [5, 9, 2], cols = ['--s1', '--s3', '--s4'], names = ['request A', 'request B', 'request C'];
+    var L = 20, U = 42, y0 = 34;
+    var start = 0;
+    lens.forEach(function (n, i) {
+      el('rect', { x: L + start * U, y: y0, width: n * U - 2, height: 26, rx: 3, fill: css(cols[i]), opacity: 0.85 }, s);
+      txt(s, L + (start + n / 2) * U, y0 + 17, names[i], { size: 11, fill: css('--on-mark'), anchor: 'middle', sans: true });
+      start += n;
+    });
+    txt(s, L, 18, 'All requests’ keys, laid end to end', { size: 11, fill: css('--muted') });
+    var bounds = [0, 5, 14, 16], parts = { 0: [], 1: [], 2: [] };
+    for (var b = 0; b < 8; b++) {
+      var a = b * 2, e = a + 2, x = L + a * U;
+      el('rect', { x: x, y: y0 + 32, width: 2 * U - 4, height: 18, rx: 9, fill: 'none', stroke: css('--ink'), 'stroke-width': 1.2 }, s);
+      txt(s, x + U - 2, y0 + 45, 'block ' + b, { size: 10, anchor: 'middle' });
+      var k = 0;
+      for (var r = 0; r < 3; r++) {
+        var lo = Math.max(a, bounds[r]), hi = Math.min(e, bounds[r + 1]);
+        if (hi > lo) {
+          var cx = x + 6 + k * 34, cy = y0 + 76;
+          el('rect', { x: cx, y: cy, width: 28, height: 16, rx: 3, fill: css(cols[r]) }, s);
+          txt(s, cx + 14, cy + 12, 'p', { size: 10, fill: css('--on-mark'), anchor: 'middle' });
+          parts[r].push(cx + 14); k++;
+        }
+      }
+      if (k > 1) txt(s, x + U - 2, y0 + 67, 'straddles', { size: 9.5, fill: css('--mark'), anchor: 'middle' });
+    }
+    var mx = [130, 380, 610];
+    for (var r2 = 0; r2 < 3; r2++) {
+      parts[r2].forEach(function (px) { el('path', { d: 'M' + px + ' ' + (y0 + 93) + ' L' + mx[r2] + ' ' + (y0 + 128), stroke: css('--rule-strong'), fill: 'none' }, s); });
+      el('rect', { x: mx[r2] - 60, y: y0 + 128, width: 120, height: 24, rx: 4, fill: css('--surface'), stroke: css(cols[r2]), 'stroke-width': 1.5 }, s);
+      txt(s, mx[r2], y0 + 144, 'merge → ' + names[r2], { size: 10.5, anchor: 'middle' });
+    }
+    txt(s, 716, 18, 'p = partial result (max, normalizer, output)', { size: 10, fill: css('--muted'), anchor: 'end' });
+  })();
+
+  /* Figure 6: verify kernel, full vs loads-only vs math-only. */
+  (function () {
+    var s = document.getElementById('verify-diag'), v = D.verify_diag;
+    var L = 150, R = 690, max = 600;
+    function X(t) { return L + (R - L) * t / max; }
+    [0, 100, 200, 300, 400, 500, 600].forEach(function (t) {
+      el('line', { x1: X(t), x2: X(t), y1: 6, y2: 108, stroke: css('--rule') }, s);
+      txt(s, X(t), 124, t + ' µs', { size: 10.5, fill: css('--muted'), anchor: 'middle' });
+    });
+    [['loads only', v.loads, css('--s1')], ['math only', v.math, css('--s4')], ['full kernel', v.full, css('--mark')]].forEach(function (r, i) {
+      var y = 10 + i * 32;
+      txt(s, L - 12, y + 14, r[0], { size: 12, sans: true, anchor: 'end' });
+      var rect = el('rect', { x: L, y: y, width: 0, height: 18, rx: 3, fill: r[2] }, s);
+      tween(700, function (k) { rect.setAttribute('width', (X(r[1]) - L) * k); });
+      txt(s, X(r[1]) + 8, y + 14, r[1].toFixed(1) + ' µs', { size: 11.5 });
+    });
+    var yF = 74, best = Math.max(v.loads, v.math), worst = v.loads + v.math;
+    el('line', { x1: X(best), x2: X(best), y1: yF - 6, y2: yF + 24, stroke: css('--ink'), 'stroke-width': 1.5, 'stroke-dasharray': '3 2' }, s);
+    el('line', { x1: X(worst), x2: X(worst), y1: yF - 6, y2: yF + 24, stroke: css('--ink'), 'stroke-width': 1.5, 'stroke-dasharray': '3 2' }, s);
+    txt(s, X(best), 144, 'perfect overlap', { size: 10, anchor: 'middle', fill: css('--muted') });
+    txt(s, X(worst), 144, 'no overlap', { size: 10, anchor: 'middle', fill: css('--muted') });
+  })();
+
+  /* Figure 7: cluster blocks on SMs (counts from the in-kernel trace; positions illustrative). */
+  (function () {
+    var s = document.getElementById('clusters'), c = D.cluster;
+    var doubled = c.sharing / 2, single = c.sms - doubled, idle = 132 - c.sms;
+    var cols = 12, cs = 19, gx = 0, gy = 22;
+    var dpos = {}; [7, 23, 41, 58, 76, 95].slice(0, doubled).forEach(function (p) { dpos[p] = 1; });
+    var placed = 0, singles = 0;
+    txt(s, 0, 12, '132 SMs', { size: 11, fill: css('--muted') });
+    for (var i = 0; i < 132; i++) {
+      var x = gx + (i % cols) * cs, y = gy + Math.floor(i / cols) * cs, kind;
+      if (dpos[i]) kind = 2; else if (singles < single) { kind = 1; singles++; } else kind = 0;
+      el('rect', { x: x, y: y, width: cs - 3, height: cs - 3, rx: 2, fill: kind === 2 ? css('--mark') : (kind === 1 ? css('--s1') : css('--base-soft')), opacity: kind === 1 ? 0.55 : 1 }, s);
+      if (kind === 2) txt(s, x + (cs - 3) / 2, y + 12, '2', { size: 10, fill: '#fff', anchor: 'middle', weight: 600 });
+    }
+    var lx = 250;
+    [[css('--s1'), 0.55, single + ' SMs ran one block'], [css('--mark'), 1, doubled + ' SMs ran two blocks'], [css('--base-soft'), 1, idle + ' SMs ran none']].forEach(function (r, i) {
+      el('rect', { x: lx, y: 24 + i * 22, width: 14, height: 14, rx: 2, fill: r[0], opacity: r[1] }, s);
+      txt(s, lx + 22, 35 + i * 22, r[2], { size: 11.5, sans: true });
+    });
+    var L = 420, R = 630, max = 20;
+    function X(v) { return L + (R - L) * v / max; }
+    txt(s, lx, 112, 'Cycles in the KV loop, thousands', { size: 11.5, sans: true, weight: 600 });
+    [0, 5, 10, 15, 20].forEach(function (v) {
+      el('line', { x1: X(v), x2: X(v), y1: 122, y2: 196, stroke: css('--rule') }, s);
+      txt(s, X(v), 212, v + 'k', { size: 10.5, fill: css('--muted'), anchor: 'middle' });
+    });
+    txt(s, L - 10, 145, 'alone on an SM (median)', { size: 11, sans: true, anchor: 'end' });
+    el('rect', { x: L, y: 132, width: X(c.alone) - L, height: 18, rx: 3, fill: css('--s1') }, s);
+    txt(s, X(c.alone) + 8, 145, c.alone.toFixed(1) + 'k', { size: 11.5 });
+    txt(s, L - 10, 181, 'sharing an SM', { size: 11, sans: true, anchor: 'end' });
+    el('rect', { x: L, y: 168, width: X(c.lo) - L, height: 18, rx: 3, fill: css('--mark') }, s);
+    el('rect', { x: X(c.lo), y: 168, width: X(c.hi) - X(c.lo), height: 18, rx: 3, fill: css('--mark'), opacity: 0.45 }, s);
+    txt(s, X(c.hi) + 8, 181, c.lo.toFixed(1) + '–' + c.hi.toFixed(1) + 'k', { size: 11.5 });
+    txt(s, lx, 240, 'The call ends when its slowest cluster ends.', { size: 11.5, sans: true, fill: css('--mark') });
+  })();
+
+  /* Figure 8: where the q8 loads sat relative to griddepcontrol.wait. */
+  (function () {
+    var s = document.getElementById('hoist'); arrowDefs(s);
+    var cols = [
+      ['Source', [['page-table loads', 0], ['griddepcontrol.wait', 1], ['load q8', 2], ['attention math', 0]]],
+      ['Failing build (CUDA 13.0)', [['page-table loads', 0], ['ld.global.nc  q8', 3], ['griddepcontrol.wait', 1], ['attention math', 0]]],
+      ['Fixed build', [['page-table loads', 0], ['griddepcontrol.wait', 1], ['ld.global.cg  q8', 2], ['attention math', 0]]]
+    ];
+    cols.forEach(function (c, i) {
+      var x = 10 + i * 238, w = 220;
+      txt(s, x, 16, c[0], { size: 12, sans: true, weight: 600 });
+      c[1].forEach(function (b, j) {
+        var y = 28 + j * 40, fill = b[1] === 1 ? css('--ink') : (b[1] === 3 ? css('--mark') : (b[1] === 2 ? css('--s3') : css('--base-soft')));
+        el('rect', { x: x, y: y, width: w, height: 30, rx: 4, fill: fill }, s);
+        txt(s, x + 10, y + 19, b[0], { size: 11.5, fill: b[1] === 0 ? css('--ink') : css('--surface') });
+        if (j) arrow(s, 'M' + (x + w / 2) + ' ' + (y - 9) + ' L' + (x + w / 2) + ' ' + (y - 1));
+      });
+      if (i === 1) {
+        el('path', { d: 'M' + (x + w + 6) + ' 113 C ' + (x + w + 18) + ' 105, ' + (x + w + 18) + ' 80, ' + (x + w + 6) + ' 72', fill: 'none', stroke: css('--mark'), 'stroke-width': 1.5, 'marker-end': 'url(#ahm-' + s.id + ')' }, s);
+        txt(s, x, 210, 'q8 read before the writes are visible', { size: 11, sans: true, fill: css('--mark') });
+      }
+    });
+    txt(s, 10, 210, 'Program order: read q8 after the wait', { size: 11, sans: true, fill: css('--muted') });
+    txt(s, 486, 210, 'Ordered load stays after the wait', { size: 11, sans: true, fill: css('--muted') });
+  })();
+
+  /* Figure 9: expert data path, and the E2M1 → BF16 bit placement. */
+  (function () {
+    var s = document.getElementById('datapath'); arrowDefs(s);
+    var y = 26;
+    txt(s, 20, 16, 'One thread, one 32-bit load', { size: 11, fill: css('--muted') });
+    for (var i = 0; i < 8; i++) { el('rect', { x: 20 + i * 22, y: y, width: 20, height: 26, rx: 2, fill: css('--bit-m') }, s); txt(s, 30 + i * 22, y + 17, 'c' + i, { size: 10, anchor: 'middle' }); }
+    txt(s, 20, y + 44, '8 × 4-bit E2M1 codes (permuted at load time)', { size: 10.5, fill: css('--muted') });
+    el('rect', { x: 20, y: 110, width: 60, height: 26, rx: 2, fill: css('--mark-soft') }, s);
+    txt(s, 50, 127, 'E4M3', { size: 10.5, anchor: 'middle' });
+    txt(s, 20, 152, 'block scale (1 per 16 weights)', { size: 10.5, fill: css('--muted') });
+    box(s, 236, 22, 156, 34, '9 integer ops', css('--base'), 'bits → BF16 × 2^−126');
+    box(s, 236, 104, 156, 34, '4 BF16x2 multiplies', css('--base'), 'block scale, exact');
+    arrow(s, 'M200 39 L232 39'); arrow(s, 'M84 123 L232 123'); arrow(s, 'M314 58 L314 100');
+    box(s, 426, 104, 124, 34, 'A fragment', css('--s4'), '16 weight rows');
+    arrow(s, 'M394 121 L422 121');
+    box(s, 426, 30, 124, 34, 'B fragment', css('--s1'), '≤ 8 token columns');
+    box(s, 580, 60, 130, 46, 'mma.sync', css('--roof'), 'm16n8k16, FP32 acc');
+    arrow(s, 'M552 121 C 566 121, 570 100, 576 92'); arrow(s, 'M552 47 C 566 47, 570 64, 576 72');
+    box(s, 580, 150, 130, 40, 'epilogue', css('--s3'), '× FP32 global scale');
+    arrow(s, 'M645 108 L645 146');
+    txt(s, 20, 214, 'At one token, 7 of the 8 token columns are zero padding.', { size: 11, sans: true, fill: css('--muted') });
+  })();
+  (function () {
+    var vals = [0, 0.5, 1, 1.5, 2, 3, 4, 6], pick = document.getElementById('e2m1-pick'), neg = false, cur = 3;
+    vals.forEach(function (v, i) { var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-v', i); b.setAttribute('aria-pressed', i === cur ? 'true' : 'false'); b.textContent = String(v); pick.appendChild(b); });
+    var sb = document.createElement('button'); sb.type = 'button'; sb.className = 'chip'; sb.textContent = '± sign'; sb.setAttribute('aria-pressed', 'false');
+    pick.parentNode.appendChild(sb);
+    function codeOf(i) { return i; }
+    function draw() {
+      var c = codeOf(cur), sgn = neg ? 1 : 0, e = c >> 1, m = c & 1;
+      var code = [sgn, (e >> 1) & 1, e & 1, m];
+      var bf = []; for (var k = 15; k >= 0; k--) bf.push(0);
+      bf[0] = sgn; bf[7] = (e >> 1) & 1; bf[8] = e & 1; bf[9] = m;
+      var cls = bf.map(function (b, k) { return k === 0 ? 's' : (k <= 8 ? 'e' : 'm'); });
+      var hl = { 0: 1, 7: 1, 8: 1, 9: 1 };
+      function cellsHtml(a, kinds, mark) { return a.map(function (b, k) { return '<span class="cell ' + kinds[k] + '" style="' + (mark ? (mark[k] ? 'outline:2px solid var(--mark);outline-offset:-2px' : 'opacity:0.35') : '') + '">' + b + '</span>'; }).join(''); }
+      document.getElementById('e2m1-bits').innerHTML =
+        '<div class="bitrow"><span>E2M1 code</span><div class="cells">' + cellsHtml(code, ['s', 'e', 'e', 'm']) + '</div></div>' +
+        '<div class="bitrow"><span>BF16 lane</span><div class="cells">' + cellsHtml(bf, cls, hl) + '</div></div>';
+      var v = (neg ? -1 : 1) * vals[cur];
+      document.getElementById('e2m1-out').innerHTML = 'Code <strong>' + v + '</strong> lands in the BF16 lane as ' + v + ' × 2<sup>−126</sup>, exactly' + (e === 0 && m === 1 ? ' (a BF16 subnormal, still exact)' : '') + '. The sign goes to bit 15, the two exponent bits to the bottom of the exponent field and the mantissa bit to the top of the mantissa.';
+    }
+    pick.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { cur = +b.getAttribute('data-v'); pick.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); draw(); }); });
+    sb.addEventListener('click', function () { neg = !neg; sb.setAttribute('aria-pressed', neg ? 'true' : 'false'); sb.classList.toggle('btn2--on', neg); draw(); });
+    draw();
+  })();
+
+  /* Figure 10: MoE trend across batch sizes, plus the explorer. */
+  var moeSel = 0;
+  function drawMoeTrend() {
+    var s = document.getElementById('moe-trend'); clear(s);
+    var L = 70, R = 690, T = 30, B = 220, lo = Math.log10(20), hi = Math.log10(800), n = D.moe.length;
+    function X(i) { return L + (R - L) * (i + 0.5) / n; }
+    function Y(v) { return B - (B - T) * (Math.log10(v) - lo) / (hi - lo); }
+    el('rect', { x: X(4) - (R - L) / n / 2, y: T - 22, width: (R - L) / n * 2, height: B - T + 22, fill: css('--mark-soft'), opacity: 0.6 }, s);
+    txt(s, X(4.5), T - 10, 'experts over 32 tokens go to the hot kernel', { size: 10.5, anchor: 'middle', fill: css('--mark') });
+    [20, 50, 100, 200, 500].forEach(function (v) {
+      el('line', { x1: L, x2: R, y1: Y(v), y2: Y(v), stroke: css('--rule') }, s);
+      txt(s, L - 8, Y(v) + 4, v + ' µs', { size: 10.5, fill: css('--muted'), anchor: 'end' });
+    });
+    el('rect', { x: X(moeSel) - 40, y: T - 22, width: 80, height: B - T + 46, fill: css('--base-soft'), opacity: 0.7 }, s);
+    [['marlin', css('--base')], ['ours', css('--mark')]].forEach(function (sr) {
+      var d = D.moe.map(function (r, i) { return (i ? 'L' : 'M') + X(i) + ' ' + Y(r[sr[0]]); }).join(' ');
+      el('path', { d: d, fill: 'none', stroke: sr[1], 'stroke-width': 2.5 }, s);
+    });
+    D.moe.forEach(function (r, i) {
+      var g = el('g', { tabindex: 0, 'class': 'ov-row', role: 'button', 'aria-label': r.tokens + ' tokens: Marlin ' + r.marlin + ' µs, mine ' + r.ours + ' µs' }, s);
+      el('rect', { x: X(i) - 40, y: T - 22, width: 80, height: B - T + 46, fill: 'transparent' }, g);
+      el('circle', { cx: X(i), cy: Y(r.marlin), r: 5, fill: css('--surface'), stroke: css('--base'), 'stroke-width': 2 }, g);
+      el('circle', { cx: X(i), cy: Y(r.ours), r: 5.5, fill: css('--mark') }, g);
+      txt(g, X(i), Y(r.marlin) - 10, (r.marlin / r.ours).toFixed(2) + '×', { size: 11.5, anchor: 'middle', weight: 600 });
+      txt(g, X(i), B + 18, r.tokens + (r.tokens === 1 ? ' token' : ' tokens'), { size: 11, anchor: 'middle', fill: i === moeSel ? css('--ink') : css('--muted'), weight: i === moeSel ? 600 : 400 });
+      function pick() { setSeg('moe', i); drawMoe(i); }
+      g.addEventListener('click', pick);
+      g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+    el('circle', { cx: L + 6, cy: B + 42, r: 5, fill: css('--surface'), stroke: css('--base'), 'stroke-width': 2 }, s);
+    txt(s, L + 16, B + 46, 'Marlin', { size: 11, sans: true, fill: css('--muted') });
+    el('circle', { cx: L + 76, cy: B + 42, r: 5.5, fill: css('--mark') }, s);
+    txt(s, L + 86, B + 46, 'this kernel (log scale; label: speedup)', { size: 11, sans: true, fill: css('--muted') });
+  }
+  function drawMoe(i) {
+    moeSel = +i;
+    var d = D.moe[+i], tbM = d.mb / d.marlin, tbO = d.mb / d.ours;
+    document.getElementById('moe-stats').innerHTML =
+      '<div><dt>Marlin</dt><dd>' + d.marlin.toFixed(1) + ' µs</dd></div>' +
+      '<div><dt>This kernel</dt><dd class="hi">' + d.ours.toFixed(1) + ' µs</dd></div>' +
+      '<div><dt>Speedup</dt><dd class="hi">' + (d.marlin / d.ours).toFixed(2) + '×</dd></div>' +
+      '<div><dt>Est. experts touched</dt><dd class="est">' + d.experts + ' of 32</dd></div>' +
+      '<div><dt>Est. weights read</dt><dd class="est">' + d.mb + ' MB</dd></div>' +
+      '<div><dt>Est. bandwidth</dt><dd class="est">' + tbO.toFixed(2) + ' TB/s</dd></div>';
+    var s = document.getElementById('moe-bw'); clear(s);
+    var L = 140, R = 650, max = 5;
+    function X(v) { return L + (R - L) * v / max; }
+    [0, 1, 2, 3, 4, 5].forEach(function (v) {
+      el('line', { x1: X(v), x2: X(v), y1: 6, y2: 108, stroke: css('--rule') }, s);
+      txt(s, X(v), 126, v + ' TB/s', { size: 11, fill: css('--muted'), anchor: 'middle' });
+    });
+    el('line', { x1: X(4.8), x2: X(4.8), y1: 2, y2: 108, stroke: css('--roof'), 'stroke-width': 2, 'stroke-dasharray': '4 3' }, s);
+    txt(s, X(4.8) + 6, 14, 'HBM peak', { size: 10.5, fill: css('--muted') });
+    [['Marlin', tbM, css('--base')], ['This kernel', tbO, css('--mark')]].forEach(function (r, k) {
+      var y = 24 + k * 44;
+      txt(s, L - 12, y + 15, r[0], { size: 12.5, sans: true, anchor: 'end' });
+      var rect = el('rect', { x: L, y: y, width: 0, height: 20, rx: 3, fill: r[2] }, s);
+      tween(500, function (q) { rect.setAttribute('width', (X(r[1]) - L) * q); });
+      txt(s, X(r[1]) + 8, y + 15, r[1].toFixed(2) + ' TB/s (est.)', { size: 12 });
+    });
+    drawMoeTrend();
+  }
+  drawMoe(seg('moe', drawMoe));
+  (function () {
+    var h = '<thead><tr><th class="num">Tokens</th><th class="num">Marlin µs</th><th class="num">This kernel µs</th><th class="num">Speedup</th><th class="num">Est. experts</th><th class="num">Est. MB</th><th class="num">Est. Marlin TB/s</th><th class="num">Est. this kernel TB/s</th></tr></thead><tbody>';
+    D.moe.forEach(function (r) {
+      h += '<tr><td class="num">' + r.tokens + '</td><td class="num">' + r.marlin.toFixed(2) + '</td><td class="num">' + r.ours.toFixed(2) + '</td><td class="num">' + (r.marlin / r.ours).toFixed(2) + '×</td><td class="num est">' + r.experts + '</td><td class="num est">' + r.mb + '</td><td class="num est">' + (r.mb / r.marlin).toFixed(2) + '</td><td class="num est">' + (r.mb / r.ours).toFixed(2) + '</td></tr>';
+    });
+    document.getElementById('moe-table').innerHTML = h + '</tbody>';
+  })();
+
+  /* Figure 11: the 753-token expert GEMM experiments, each its own pair. */
+  (function () {
+    var s = document.getElementById('prefill-steps'), P = D.prefill_steps;
+    var groups = [
+      ['Expert GEMMs at 753 tokens, tokens spread evenly', [['Marlin', P.marlin, '--base'], ['my Triton kernel', P.triton, '--base'], ['my Gluon kernel', P.gluon, '--mark']], 750],
+      ['Gluon kernel, the judge’s skewed routing', [['grid sized for the worst case', P.grid, '--base'], ['persistent over active tiles', P.persistent, '--mark']], 750],
+      ['A later run, the judge’s skewed routing', [['persistent over active tiles', P.persistent2, '--base'], ['plus a small-tile region', P.smalltile, '--mark']], 750]
+    ];
+    var L = 250, R = 640, y = 4;
+    groups.forEach(function (gr, gi) {
+      y += 16; txt(s, 0, y, gr[0], { size: 12, sans: true, weight: 600 }); y += 8;
+      gr[1].forEach(function (r) {
+        var w = (R - L) * r[1] / gr[2], g = el('g', { tabindex: 0 }, s);
+        txt(g, 12, y + 14, r[0], { size: 11.5, sans: true, fill: css('--muted') });
+        var rect = el('rect', { x: L, y: y + 3, width: 0, height: 15, rx: 3, fill: css(r[2]) }, g);
+        tween(700, function (k) { rect.setAttribute('width', w * k); });
+        txt(g, L + w + 8, y + 15, us(r[1]) + ' µs', { size: 11.5, fill: r[2] === '--mark' ? css('--mark') : css('--ink'), weight: r[2] === '--mark' ? 600 : 400 });
+        tip(g, gr[0] + ': ' + r[0] + ', ' + us(r[1]) + ' µs');
+        y += 22;
+      });
+      if (gi < groups.length - 1) el('line', { x1: 0, x2: 716, y1: y + 6, y2: y + 6, stroke: css('--rule'), 'stroke-dasharray': '2 3' }, s);
+      y += 6;
+    });
+  })();
+
+  /* Figure 12: routes per expert (bars) with the cumulative share (line). */
+  (function () {
+    var s = document.getElementById('skew');
+    var counts = D.skew, total = counts.reduce(function (a, b) { return a + b; }, 0);
+    var L = 56, R = 660, T = 16, B = 196, n = 32, bw = (R - L) / n;
+    function X(i) { return L + bw * i; }
+    function Yc(v) { return B - (B - T) * v / 800; }
+    function Ys(v) { return B - (B - T) * v; }
+    [0, 200, 400, 600, 800].forEach(function (v) {
+      el('line', { x1: L, x2: R, y1: Yc(v), y2: Yc(v), stroke: css('--rule') }, s);
+      txt(s, L - 8, Yc(v) + 4, v, { size: 10.5, fill: css('--muted'), anchor: 'end' });
+    });
+    [0, 0.5, 1].forEach(function (v) { txt(s, R + 8, Ys(v) + 4, Math.round(v * 100) + '%', { size: 10.5, fill: css('--mark') }); });
+    txt(s, 12, (T + B) / 2, 'routes', { size: 11, fill: css('--muted'), anchor: 'middle', transform: 'rotate(-90 12 ' + (T + B) / 2 + ')' }).setAttribute('transform', 'rotate(-90 12 ' + (T + B) / 2 + ')');
+    counts.forEach(function (c, i) {
+      var g = el('g', { tabindex: 0 }, s);
+      if (c > 0) { var r = el('rect', { x: X(i) + 2, y: B, width: bw - 4, height: 0, rx: 1.5, fill: css('--s4'), opacity: 0.85 }, g); (function (r, c) { tween(800, function (k) { r.setAttribute('y', Yc(c * k)); r.setAttribute('height', B - Yc(c * k)); }); })(r, c); }
+      else el('line', { x1: X(i) + 3, x2: X(i) + bw - 3, y1: B - 1, y2: B - 1, stroke: css('--rule-strong'), 'stroke-width': 2 }, g);
+      tip(g, 'expert rank ' + (i + 1) + ': ' + c + ' routes');
+    });
+    el('path', { d: 'M' + X(0) + ' ' + Ys(0) + ' L' + X(32) + ' ' + Ys(1), stroke: css('--base'), 'stroke-width': 1.5, 'stroke-dasharray': '5 4', fill: 'none' }, s);
+    var cum = 0, d = 'M' + X(0) + ' ' + Ys(0);
+    counts.forEach(function (c, i) { cum += c; d += ' L' + (X(i) + bw) + ' ' + Ys(cum / total); });
+    el('path', { d: d, stroke: css('--mark'), 'stroke-width': 2.5, fill: 'none' }, s);
+    cum = 0;
+    counts.forEach(function (c, i) {
+      cum += c;
+      if (i === 0 || i === 3) {
+        el('circle', { cx: X(i) + bw, cy: Ys(cum / total), r: 3.5, fill: css('--mark') }, s);
+        txt(s, X(i) + bw + 8, Ys(cum / total) + (i === 0 ? 14 : -6), (100 * cum / total).toFixed(1) + '%', { size: 11, fill: css('--mark'), weight: 600 });
+      }
+    });
+    txt(s, X(16) + 4, B - 10, 'ranks 17–32: no routes', { size: 10.5, fill: css('--muted') });
+    [1, 8, 16, 24, 32].forEach(function (r) { txt(s, X(r - 1) + bw / 2, B + 16, r, { size: 10.5, fill: css('--muted'), anchor: 'middle' }); });
+    txt(s, (L + R) / 2, B + 34, 'Experts on this GPU, hottest first', { size: 11.5, fill: css('--muted'), anchor: 'middle' });
+  })();
+
+  /* Figure 13: prefill layer per shape, my time as a share of SGLang's. */
+  (function () {
+    var s = document.getElementById('prefill-layer');
+    var L = 230, R = 500, y = 22;
+    txt(s, L, 12, 'my time as a share of SGLang’s', { size: 10.5, fill: css('--muted') });
+    D.prefill_layer.forEach(function (r) {
+      var g = el('g', { tabindex: 0 }, s), frac = r.ours / r.base;
+      txt(g, 0, y + 15, r.label, { size: 11.5, sans: true });
+      el('rect', { x: L, y: y + 2, width: R - L, height: 18, rx: 3, fill: css('--base-soft') }, g);
+      var rect = el('rect', { x: L, y: y + 2, width: 0, height: 18, rx: 3, fill: css('--mark') }, g);
+      tween(800, function (k) { rect.setAttribute('width', (R - L) * frac * k); });
+      txt(g, R + 10, y + 15, (r.base / r.ours).toFixed(2) + '×', { size: 12, weight: 600, fill: css('--mark') });
+      txt(g, 716, y + 15, us(r.base) + ' → ' + us(r.ours) + ' µs', { size: 10.5, fill: css('--muted'), anchor: 'end' });
+      tip(g, r.label + ': SGLang ' + us(r.base) + ' µs, mine ' + us(r.ours) + ' µs');
+      y += 34;
+    });
+    el('line', { x1: R, x2: R, y1: 18, y2: y - 8, stroke: css('--ink'), 'stroke-width': 1, 'stroke-dasharray': '3 3' }, s);
+    txt(s, R, y + 6, 'SGLang = 100%', { size: 10.5, fill: css('--muted'), anchor: 'middle' });
+  })();
+
+  /* Figure 14: modeled share of the stock server's GPU time, by load. */
+  (function () {
+    var s = document.getElementById('timeshare');
+    var L = 90, R = 700, segs = [['first', '--s1'], ['later', '--s3'], ['decode', '--s4'], ['idle', '--base-soft']];
+    function X(p) { return L + (R - L) * p / 100; }
+    [0, 25, 50, 75, 100].forEach(function (p) {
+      el('line', { x1: X(p), x2: X(p), y1: 10, y2: 166, stroke: css('--rule') }, s);
+      txt(s, X(p), 184, p + '%', { size: 10.5, fill: css('--muted'), anchor: 'middle' });
+    });
+    D.timeshare.forEach(function (r, i) {
+      var y = 18 + i * 50, acc = 0, g = el('g', { tabindex: 0 }, s);
+      txt(g, L - 12, y + 20, users(r.conc), { size: 12, sans: true, anchor: 'end' });
+      segs.forEach(function (sg) {
+        var v = r[sg[0]], x = X(acc);
+        if (v > 0) {
+          var rect = el('rect', { x: x, y: y, width: 0, height: 30, fill: css(sg[1]), stroke: css('--surface'), 'stroke-width': 1 }, g);
+          var w = X(acc + v) - x;
+          tween(800, function (k) { rect.setAttribute('width', w * k); });
+          if (w > 34) txt(g, x + w / 2, y + 20, Math.round(v) + '%', { size: 11, anchor: 'middle', weight: 600, fill: sg[0] === 'idle' ? css('--ink') : '#fff' });
+        }
+        acc += v;
+      });
+      tip(g, users(r.conc) + ': first-turn prefill ' + r.first + '%, later-turn prefill ' + r.later + '%, decode ' + r.decode + '%, host and idle ' + r.idle + '% (model)');
+    });
+  })();
+
+  /* Figure 16 fallback table: TTFT values. */
+  (function () {
+    var t = '<thead><tr><th>Run</th><th class="num">Users</th><th class="num">First turn p90, stock → mine</th><th class="num">Later turns p90, stock → mine</th></tr></thead><tbody>';
+    D.ttft.forEach(function (r) {
+      t += '<tr><td>' + r.name + '</td><td class="num">' + r.conc + '</td><td class="num">' + r.sf.toFixed(2) + ' → ' + r.of.toFixed(2) + ' s</td><td class="num">' + r.sl.toFixed(2) + ' → ' + r.ol.toFixed(2) + ' s</td></tr>';
+    });
+    document.getElementById('ttft-table').innerHTML = t + '</tbody>';
+  })();
+
+  /* Figure A1: 12-bit encoder */
+  function bf16(x) { var u = new Uint32Array(new Float32Array([x]).buffer)[0]; return ((u + 0x7FFF + ((u >>> 16) & 1)) >>> 16) & 0xFFFF; }
+  function bitsOf(v, n) { var a = []; for (var i = n - 1; i >= 0; i--) a.push((v >>> i) & 1); return a; }
+  function cells(arr, cls) { return arr.map(function (b, i) { return '<span class="cell ' + cls[i] + '">' + b + '</span>'; }).join(''); }
+  var BASE = 54;
+  function encode() {
+    var raw = document.getElementById('enc-v').value.trim(), x = Number(raw);
+    var out = document.getElementById('enc-out'), bx = document.getElementById('enc-bits');
+    if (raw === '' || !isFinite(x)) { out.textContent = 'Type a finite number, for example 0.0137.'; bx.innerHTML = ''; return; }
+    var b = bf16(x), sg = b >>> 15, e = (b >>> 7) & 0xFF;
+    var back = new Float32Array(new Uint32Array([b << 16]).buffer)[0];
+    var c = (e >>> 1) - BASE, inWin = c >= 0 && c <= 7;
+    var html = '<div class="bitrow"><span>BF16 (16 bits)</span><div class="cells">' + cells(bitsOf(b, 16), ['s', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'e', 'm', 'm', 'm', 'm', 'm', 'm', 'm']) + '</div></div>';
+    if (inWin) {
+      var code = (sg << 3) | c;
+      html += '<div class="bitrow"><span>12-bit form</span><div class="cells">' + cells(bitsOf(code, 4), ['s', 'c', 'c', 'c']) + '<span class="cell gap"></span>' + cells(bitsOf(b & 0xFF, 8), ['e', 'm', 'm', 'm', 'm', 'm', 'm', 'm']) + '</div></div>';
+      out.innerHTML = 'BF16 value <strong>' + back.toPrecision(6) + '</strong>, binade ' + (e - 127) + ', inside the window: the high byte becomes code ' + code + ' (sign ' + sg + ', offset ' + c + '), and decoding rebuilds the same 16 bits.';
+    } else {
+      html += '<div class="bitrow"><span>12-bit form</span><div class="cells">' + cells([0, 0, 0, 0], ['c', 'c', 'c', 'c']) + '<span class="cell gap"></span>' + cells([0, 0, 0, 0, 0, 0, 0, 0], ['e', 'm', 'm', 'm', 'm', 'm', 'm', 'm']) + '</div></div>';
+      out.innerHTML = 'BF16 value <strong>' + back.toPrecision(6) + '</strong> is ' + (e === 0 ? 'zero or subnormal' : 'in binade ' + (e - 127)) + ', outside the window: stored as the fixed value 2<sup>−19</sup> plus an exact FP32 correction of ' + (back - Math.pow(2, -19)).toPrecision(6) + ', added after the GEMM.';
+    }
+    bx.innerHTML = html;
+  }
+  document.getElementById('enc-v').addEventListener('input', encode);
+  document.querySelectorAll('.chip[data-w]').forEach(function (cc) { cc.addEventListener('click', function () { document.getElementById('enc-v').value = cc.getAttribute('data-w'); encode(); }); });
+  encode();
+
+  /* Figure A2: router */
+  (function () {
+    var s = document.getElementById('router');
+    var d = D.router.map(function (r) { return [r.m, r.base, r.ours]; });
+    var L = 90, R = 650, T = 12, h = 34, max = 30;
+    function X(v) { return L + (R - L) * v / max; }
+    [0, 10, 20, 30].forEach(function (v) {
+      el('line', { x1: X(v), x2: X(v), y1: T - 4, y2: T + h * d.length, stroke: css('--rule') }, s);
+      el('text', { x: X(v), y: T + h * d.length + 16, 'text-anchor': 'middle', 'font-size': 11, fill: css('--muted') }, s, v + ' µs');
+    });
+    d.forEach(function (r, i) {
+      var y = T + i * h, g = el('g', { tabindex: 0 }, s);
+      el('text', { x: L - 12, y: y + 16, 'text-anchor': 'end', 'font-size': 12.5, fill: css('--ink'), 'font-family': 'Inter, sans-serif' }, s, r[0] + (r[0] === 1 ? ' token' : ' tokens'));
+      el('rect', { x: L, y: y + 3, width: X(r[1]) - L, height: 10, rx: 2, fill: css('--base') }, g);
+      el('rect', { x: L, y: y + 14, width: X(r[2]) - L, height: 10, rx: 2, fill: css('--mark') }, g);
+      el('text', { x: X(r[1]) + 8, y: y + 17, 'font-size': 11.5, fill: css('--ink') }, g, r[1].toFixed(2) + ' → ' + r[2].toFixed(2) + ' µs');
+      tip(g, r[0] + ' tokens: baseline ' + r[1] + ' µs, one launch ' + r[2] + ' µs');
+    });
+    var ly = T + h * d.length + 28;
+    el('rect', { x: 470, y: ly, width: 12, height: 10, rx: 2, fill: css('--base') }, s);
+    el('text', { x: 488, y: ly + 9, 'font-size': 11.5, fill: css('--muted') }, s, 'baseline');
+    el('rect', { x: 560, y: ly, width: 12, height: 10, rx: 2, fill: css('--mark') }, s);
+    el('text', { x: 578, y: ly + 9, 'font-size': 11.5, fill: css('--muted') }, s, 'one launch');
+  })();
+
+  /* Figure A3: ceilings, with estimated achieved points */
+  (function () {
+    var s = document.getElementById('roof');
+    var L = 70, R = 700, T = 20, B = 280, xmax = Math.log10(4000), ymax = Math.log10(3000);
+    function X(ai) { return L + (R - L) * Math.log10(ai) / xmax; }
+    function Y(tf) { return B - (B - T) * Math.log10(tf) / ymax; }
+    [1, 10, 100, 1000].forEach(function (v) {
+      el('line', { x1: X(v), x2: X(v), y1: T, y2: B, stroke: css('--rule') }, s);
+      txt(s, X(v), B + 18, v, { size: 11, fill: css('--muted'), anchor: 'middle' });
+      el('line', { x1: L, x2: R, y1: Y(v), y2: Y(v), stroke: css('--rule') }, s);
+      txt(s, L - 8, Y(v) + 4, v, { size: 11, fill: css('--muted'), anchor: 'end' });
+    });
+    txt(s, (L + R) / 2, B + 38, 'Arithmetic intensity (FLOP per byte)', { size: 12, fill: css('--muted'), anchor: 'middle' });
+    el('text', { x: 16, y: (T + B) / 2, 'text-anchor': 'middle', 'font-size': 12, fill: css('--muted'), transform: 'rotate(-90 16 ' + (T + B) / 2 + ')' }, s, 'TFLOP/s');
+    function roof(peak, color, dash) {
+      var ridge = peak / 4.8;
+      el('path', { d: 'M' + X(1) + ' ' + Y(4.8) + ' L' + X(ridge) + ' ' + Y(peak) + ' L' + X(4000) + ' ' + Y(peak), fill: 'none', stroke: color, 'stroke-width': dash ? 1.5 : 2.5, 'stroke-dasharray': dash ? '5 4' : '' }, s);
+      txt(s, X(3000), Y(peak) - 8, peak.toLocaleString() + ' TFLOP/s · ridge ' + Math.round(ridge), { size: 11, fill: css('--muted'), anchor: 'end' });
+    }
+    roof(1979, css('--base'), true); roof(989, css('--roof'), false);
+    var a32 = D.attn.filter(function (r) { return r.batch === 32 && r.layer === 'full'; });
+    var dec = a32.filter(function (r) { return r.mode === 'decode'; })[0], ver = a32.filter(function (r) { return r.mode === 'verify'; })[0];
+    var pooMB = D.pooler.floor16 * 4.8, m1 = D.moe[0], eAI = 2 / 0.5625;
+    var pts = [
+      ['pooler, 1 token', 1, pooMB / D.pooler.ours, 1],
+      ['experts, 1 token', eAI, m1.mb / m1.ours, 1],
+      ['decode attention, batch 32', 16, dec.mb / dec.ours, -1],
+      ['verify attention, batch 32', 128, ver.mb / ver.ours, -1]
+    ];
+    pts.forEach(function (p) {
+      var tf = p[1] * p[2], g = el('g', { tabindex: 0 }, s);
+      el('circle', { cx: X(p[1]), cy: Y(tf), r: 6, fill: css('--mark'), stroke: css('--surface'), 'stroke-width': 2 }, g);
+      txt(g, X(p[1]) + 10, Y(tf) + (p[3] > 0 ? 16 : -8), p[0], { size: 10.5, sans: true });
+      tip(g, p[0] + ': ~' + p[1].toFixed(1) + ' FLOP/byte, ~' + tf.toFixed(0) + ' TFLOP/s achieved (estimated from nominal bytes and measured time)');
+    });
+  })();
+
+  /* On narrow screens, say when a figure scrolls sideways. */
+  function hints() {
+    document.querySelectorAll('.svgbox').forEach(function (b) {
+      var h = b.previousElementSibling && b.previousElementSibling.classList.contains('swipe-hint') ? b.previousElementSibling : null;
+      var need = b.scrollWidth > b.clientWidth + 4;
+      if (need && !h) { h = document.createElement('p'); h.className = 'swipe-hint on'; h.textContent = 'Scroll sideways to see the whole figure →'; b.parentNode.insertBefore(h, b); }
+      if (h) h.classList.toggle('on', need);
+    });
+  }
+  hints(); addEventListener('resize', hints);
+})();
+</script>
+</body>
+</html>

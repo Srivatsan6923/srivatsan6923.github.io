@@ -1,6 +1,17 @@
 # Project cards. `url` is optional; entries without one render as a non-clickable card.
 # `contain: true` pads/contains the image instead of cropping it (use for logos).
 - featured: true
+  title: "Optimizing Muse Spark Inference on H200"
+  url: /projects/muse-spark-h200/
+  image: /projects/muse-spark-h200/figures/card.png
+  meta: "Open Kernel Challenge 2026 · solo entry · 1× and 8× NVIDIA H200"
+  desc: >
+    New attention, NVFP4 expert and projection kernels for an 816B mixture-of-experts model, carried into SGLang on
+    eight GPUs. Scores of 1.94–1.97× over FlashAttention-3 and Marlin on one H200, and a decoder layer cut from 172.1
+    to 83.3 µs by finding which dependency it was actually waiting on.
+  tags: [GPU Kernels, CUDA, LLM Inference, SGLang]
+
+- featured: true
   title: "Attention Kernel Portability Across GPU Architectures"
   url: /projects/attention-kernel-portability/
   image: /projects/attention-kernel-portability/figures/figA_separation.png
