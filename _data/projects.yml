@@ -12,16 +12,16 @@
   tags: [GPU Kernels, CUDA, LLM Inference, SGLang]
 
 - featured: true
-  title: "Attention Kernel Portability Across GPU Architectures"
+  title: "Does the Fastest Attention Kernel Survive a Change of GPU?"
   url: /projects/attention-kernel-portability/
   image: /projects/attention-kernel-portability/figures/figA_separation.png
-  meta: "Independent research · 6 NVIDIA GPUs, 4 architecture families"
+  meta: "Independent study · 6 NVIDIA GPUs, Ampere to Blackwell"
   desc: >
-    A benchmark of forward-prefill and single-token KV-cache attention across six NVIDIA GPUs, asking whether
-    the fastest backend on one device is still the fastest on another. A winner counts only when it clears both
-    a bootstrap confidence interval and a 10% margin; under that bar the backend changed in 27 of 64 separated
-    prefill comparisons across the Ampere, Ada and Hopper parts.
-  tags: [GPU Kernels, Benchmarking, PyTorch, Inference]
+    FlashAttention-2 and 3, FlashInfer, cuDNN, Triton and PyTorch SDPA timed for prefill and decode on six GPUs.
+    With ties removed, the prefill winner changes between GPUs about 4 times in 10 and the decode winner about
+    once in 10. The worst 5% of reused prefill choices run 1.6× slower or more, and the winners line up closely
+    with which GPUs each library ships native code for.
+  tags: [GPU Kernels, LLM Inference, Benchmarking, PyTorch]
 
 - featured: true
   title: "DRISHTI: On-Device Assistive Navigation for the Visually Impaired"
